@@ -20,6 +20,7 @@ export type Database = {
           created_at: string
           id: string
           is_fast_track: boolean
+          patient_id: string | null
           patient_name: string
           patient_photo: string | null
           scheduled_time: string
@@ -31,6 +32,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_fast_track?: boolean
+          patient_id?: string | null
           patient_name: string
           patient_photo?: string | null
           scheduled_time: string
@@ -42,13 +44,221 @@ export type Database = {
           created_at?: string
           id?: string
           is_fast_track?: boolean
+          patient_id?: string | null
           patient_name?: string
           patient_photo?: string | null
           scheduled_time?: string
           status?: string
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      medical_files: {
+        Row: {
+          category: string | null
+          file_name: string
+          file_size: number | null
+          file_type: string
+          file_url: string
+          id: string
+          patient_id: string
+          uploaded_at: string
+          visit_id: string | null
+        }
+        Insert: {
+          category?: string | null
+          file_name: string
+          file_size?: number | null
+          file_type: string
+          file_url: string
+          id?: string
+          patient_id: string
+          uploaded_at?: string
+          visit_id?: string | null
+        }
+        Update: {
+          category?: string | null
+          file_name?: string
+          file_size?: number | null
+          file_type?: string
+          file_url?: string
+          id?: string
+          patient_id?: string
+          uploaded_at?: string
+          visit_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medical_files_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "medical_files_visit_id_fkey"
+            columns: ["visit_id"]
+            isOneToOne: false
+            referencedRelation: "visits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patients: {
+        Row: {
+          age: number
+          allergies: string[] | null
+          blood_type: string | null
+          chronic_conditions: string[] | null
+          created_at: string
+          gender: string
+          id: string
+          name: string
+          name_ar: string | null
+          phone: string | null
+          photo_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          age: number
+          allergies?: string[] | null
+          blood_type?: string | null
+          chronic_conditions?: string[] | null
+          created_at?: string
+          gender?: string
+          id?: string
+          name: string
+          name_ar?: string | null
+          phone?: string | null
+          photo_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          age?: number
+          allergies?: string[] | null
+          blood_type?: string | null
+          chronic_conditions?: string[] | null
+          created_at?: string
+          gender?: string
+          id?: string
+          name?: string
+          name_ar?: string | null
+          phone?: string | null
+          photo_url?: string | null
+          updated_at?: string
+        }
         Relationships: []
+      }
+      prescriptions: {
+        Row: {
+          created_at: string
+          dosage: string
+          drug_name: string
+          drug_name_ar: string | null
+          duration: string | null
+          frequency: string
+          id: string
+          notes: string | null
+          visit_id: string
+        }
+        Insert: {
+          created_at?: string
+          dosage: string
+          drug_name: string
+          drug_name_ar?: string | null
+          duration?: string | null
+          frequency: string
+          id?: string
+          notes?: string | null
+          visit_id: string
+        }
+        Update: {
+          created_at?: string
+          dosage?: string
+          drug_name?: string
+          drug_name_ar?: string | null
+          duration?: string | null
+          frequency?: string
+          id?: string
+          notes?: string | null
+          visit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prescriptions_visit_id_fkey"
+            columns: ["visit_id"]
+            isOneToOne: false
+            referencedRelation: "visits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      visits: {
+        Row: {
+          bp_diastolic: number | null
+          bp_systolic: number | null
+          chief_complaint: string | null
+          created_at: string
+          diagnosis: string | null
+          heart_rate: number | null
+          id: string
+          notes: string | null
+          patient_id: string
+          status: string
+          temperature: number | null
+          updated_at: string
+          visit_date: string
+          weight: number | null
+        }
+        Insert: {
+          bp_diastolic?: number | null
+          bp_systolic?: number | null
+          chief_complaint?: string | null
+          created_at?: string
+          diagnosis?: string | null
+          heart_rate?: number | null
+          id?: string
+          notes?: string | null
+          patient_id: string
+          status?: string
+          temperature?: number | null
+          updated_at?: string
+          visit_date?: string
+          weight?: number | null
+        }
+        Update: {
+          bp_diastolic?: number | null
+          bp_systolic?: number | null
+          chief_complaint?: string | null
+          created_at?: string
+          diagnosis?: string | null
+          heart_rate?: number | null
+          id?: string
+          notes?: string | null
+          patient_id?: string
+          status?: string
+          temperature?: number | null
+          updated_at?: string
+          visit_date?: string
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visits_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
