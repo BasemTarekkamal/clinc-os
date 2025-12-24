@@ -88,7 +88,8 @@ export default function Patients() {
       return;
     }
 
-    const { error } = await supabase.from("patients").insert({
+    // Insert patient and get the created record
+    const { data: patientData, error } = await supabase.from("patients").insert({
       name: newPatient.name,
       name_ar: newPatient.name_ar || null,
       age: parseInt(newPatient.age),
@@ -101,7 +102,7 @@ export default function Patients() {
       allergies: newPatient.allergies
         ? newPatient.allergies.split(",").map((a) => a.trim())
         : [],
-    });
+    }).select().single();
 
     if (error) {
       console.error("Error adding patient:", error);
@@ -111,9 +112,22 @@ export default function Patients() {
         variant: "destructive",
       });
     } else {
+      // Also create an appointment for this patient so they appear in the queue
+      const { error: appointmentError } = await supabase.from("appointments").insert({
+        patient_id: patientData.id,
+        patient_name: newPatient.name_ar || newPatient.name,
+        scheduled_time: new Date().toISOString(),
+        status: "booked",
+        is_fast_track: false,
+      });
+
+      if (appointmentError) {
+        console.error("Error creating appointment:", appointmentError);
+      }
+
       toast({
         title: "تم بنجاح",
-        description: "تمت إضافة المريض",
+        description: "تمت إضافة المريض وإضافته لقائمة الانتظار",
       });
       setIsAddDialogOpen(false);
       setNewPatient({
