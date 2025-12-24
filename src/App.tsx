@@ -9,6 +9,7 @@ import Patients from "./pages/Patients";
 import PatientProfile from "./pages/PatientProfile";
 import Messages from "./pages/Messages";
 import Finances from "./pages/Finances";
+import SmartInbox from "./pages/SmartInbox";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
           <Route path="/patients" element={<Patients />} />
           <Route path="/patient/:patientId" element={<PatientProfile />} />
           <Route path="/messages" element={<Messages />} />
+          <Route path="/inbox" element={<SmartInbox />} />
           <Route path="/finances" element={<Finances />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

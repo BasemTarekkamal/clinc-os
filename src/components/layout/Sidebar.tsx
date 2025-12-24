@@ -7,7 +7,8 @@ import {
   ClipboardList,
   ChevronLeft,
   ChevronRight,
-  Stethoscope
+  Stethoscope,
+  Bot
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ const navItems = [
   { icon: LayoutDashboard, label: "لوحة التحكم", labelEn: "Dashboard", path: "/" },
   { icon: ClipboardList, label: "قائمة الانتظار", labelEn: "Live Queue", path: "/queue" },
   { icon: Users, label: "المرضى", labelEn: "Patients (EMR)", path: "/patients" },
+  { icon: Bot, label: "صندوق الوارد الذكي", labelEn: "Smart Inbox", path: "/inbox" },
   { icon: MessageSquare, label: "الرسائل", labelEn: "Messages", path: "/messages" },
   { icon: Wallet, label: "المالية", labelEn: "Finances", path: "/finances" },
 ];
