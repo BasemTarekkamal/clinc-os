@@ -1,11 +1,14 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { 
   CheckCircle, 
   MessageCircle, 
   XCircle, 
   Clock,
   Zap,
-  User
+  User,
+  Stethoscope,
+  FileText
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -18,6 +21,7 @@ export interface Appointment {
   id: string;
   patient_name: string;
   patient_photo?: string;
+  patient_id?: string;
   status: AppointmentStatus;
   scheduled_time: string;
   is_fast_track: boolean;
@@ -29,6 +33,7 @@ interface PatientCardProps {
   onCheckIn: (id: string) => void;
   onSendReminder: (id: string) => void;
   onNoShow: (id: string) => void;
+  onStartConsultation?: (id: string) => void;
 }
 
 const statusConfig: Record<AppointmentStatus, { 
@@ -75,9 +80,11 @@ export function PatientCard({
   appointment, 
   onCheckIn, 
   onSendReminder, 
-  onNoShow 
+  onNoShow,
+  onStartConsultation
 }: PatientCardProps) {
   const [isExiting, setIsExiting] = useState(false);
+  const navigate = useNavigate();
   const status = statusConfig[appointment.status];
 
   const handleNoShow = () => {
@@ -85,6 +92,22 @@ export function PatientCard({
     setTimeout(() => {
       onNoShow(appointment.id);
     }, 500);
+  };
+
+  const handleOpenProfile = () => {
+    if (appointment.patient_id) {
+      navigate(`/patient/${appointment.patient_id}`);
+    }
+  };
+
+  const handleStartConsultation = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onStartConsultation) {
+      onStartConsultation(appointment.id);
+    }
+    if (appointment.patient_id) {
+      navigate(`/patient/${appointment.patient_id}?consultation=true`);
+    }
   };
 
   const formattedTime = format(
@@ -97,10 +120,11 @@ export function PatientCard({
     <div 
       className={cn(
         "relative flex items-center gap-4 p-4 rounded-xl bg-card border transition-all duration-300",
-        "hover:shadow-md slide-in",
+        "hover:shadow-md slide-in cursor-pointer",
         status.borderClass,
         isExiting && "fade-out"
       )}
+      onClick={handleOpenProfile}
     >
       {/* Fast Track Badge */}
       {appointment.is_fast_track && (
@@ -144,12 +168,42 @@ export function PatientCard({
       </div>
 
       {/* Action Buttons */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+        {/* View Profile */}
+        <Button
+          variant="outline"
+          size="lg"
+          onClick={handleOpenProfile}
+          className={cn(
+            "h-12 w-12 p-0 rounded-xl transition-all duration-200",
+            "hover:bg-accent hover:text-accent-foreground"
+          )}
+          title="عرض الملف"
+        >
+          <FileText className="h-5 w-5" />
+        </Button>
+
+        {/* Start Consultation - Only for arrived patients */}
+        {appointment.status === "arrived" && (
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={handleStartConsultation}
+            className={cn(
+              "h-12 w-12 p-0 rounded-xl transition-all duration-200",
+              "hover:bg-primary hover:text-primary-foreground hover:border-primary"
+            )}
+            title="بدء الاستشارة"
+          >
+            <Stethoscope className="h-5 w-5" />
+          </Button>
+        )}
+
         {/* Check In */}
         <Button
           variant="outline"
           size="lg"
-          onClick={() => onCheckIn(appointment.id)}
+          onClick={(e) => { e.stopPropagation(); onCheckIn(appointment.id); }}
           disabled={appointment.status === "arrived" || appointment.status === "in-consultation"}
           className={cn(
             "h-12 w-12 p-0 rounded-xl transition-all duration-200",
@@ -165,7 +219,7 @@ export function PatientCard({
         <Button
           variant="outline"
           size="lg"
-          onClick={() => onSendReminder(appointment.id)}
+          onClick={(e) => { e.stopPropagation(); onSendReminder(appointment.id); }}
           className={cn(
             "h-12 w-12 p-0 rounded-xl transition-all duration-200",
             "hover:bg-primary hover:text-primary-foreground hover:border-primary"
@@ -179,7 +233,7 @@ export function PatientCard({
         <Button
           variant="outline"
           size="lg"
-          onClick={handleNoShow}
+          onClick={(e) => { e.stopPropagation(); handleNoShow(); }}
           className={cn(
             "h-12 w-12 p-0 rounded-xl transition-all duration-200",
             "hover:bg-destructive hover:text-destructive-foreground hover:border-destructive"

@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PatientCard, type Appointment } from "@/components/queue/PatientCard";
 import { QueueStats } from "@/components/queue/QueueStats";
 import { useToast } from "@/hooks/use-toast";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function LiveQueue() {
@@ -11,7 +11,7 @@ export default function LiveQueue() {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  const fetchAppointments = async () => {
+  const fetchAppointments = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("appointments")
@@ -30,7 +30,7 @@ export default function LiveQueue() {
       setAppointments(data as Appointment[]);
     }
     setLoading(false);
-  };
+  }, [toast]);
 
   useEffect(() => {
     fetchAppointments();
@@ -54,7 +54,7 @@ export default function LiveQueue() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [fetchAppointments]);
 
   const handleCheckIn = async (id: string) => {
     const { error } = await supabase
@@ -103,6 +103,26 @@ export default function LiveQueue() {
       toast({
         title: "تم التحديث",
         description: "تم تسجيل عدم الحضور",
+      });
+    }
+  };
+
+  const handleStartConsultation = async (id: string) => {
+    const { error } = await supabase
+      .from("appointments")
+      .update({ status: "in-consultation" })
+      .eq("id", id);
+
+    if (error) {
+      toast({
+        title: "خطأ",
+        description: "فشل في بدء الاستشارة",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "تم بنجاح",
+        description: "تم بدء الاستشارة",
       });
     }
   };
@@ -159,6 +179,7 @@ export default function LiveQueue() {
                 onCheckIn={handleCheckIn}
                 onSendReminder={handleSendReminder}
                 onNoShow={handleNoShow}
+                onStartConsultation={handleStartConsultation}
               />
             ))}
           </div>
@@ -167,6 +188,3 @@ export default function LiveQueue() {
     </div>
   );
 }
-
-// Import Users for empty state
-import { Users } from "lucide-react";

@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Patients from "./pages/Patients";
+import PatientProfile from "./pages/PatientProfile";
 import Messages from "./pages/Messages";
 import Finances from "./pages/Finances";
 import NotFound from "./pages/NotFound";
@@ -23,6 +24,7 @@ const App = () => (
           <Route path="/queue" element={<Index />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/patients" element={<Patients />} />
+          <Route path="/patient/:patientId" element={<PatientProfile />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/finances" element={<Finances />} />
           <Route path="*" element={<NotFound />} />
