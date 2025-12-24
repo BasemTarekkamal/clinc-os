@@ -19,7 +19,7 @@ interface SidebarProps {
 }
 
 const navItems = [
-  { icon: LayoutDashboard, label: "لوحة التحكم", labelEn: "Dashboard", path: "/" },
+  { icon: LayoutDashboard, label: "لوحة التحكم", labelEn: "Dashboard", path: "/dashboard" },
   { icon: ClipboardList, label: "قائمة الانتظار", labelEn: "Live Queue", path: "/queue" },
   { icon: Users, label: "المرضى", labelEn: "Patients (EMR)", path: "/patients" },
   { icon: Bot, label: "صندوق الوارد الذكي", labelEn: "Smart Inbox", path: "/inbox" },

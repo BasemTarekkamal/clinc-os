@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { PatientCard, type Appointment } from "@/components/queue/PatientCard";
 import { QueueStats } from "@/components/queue/QueueStats";
@@ -10,6 +11,7 @@ export default function LiveQueue() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const fetchAppointments = useCallback(async () => {
     setLoading(true);
@@ -17,6 +19,7 @@ export default function LiveQueue() {
       .from("appointments")
       .select("*")
       .neq("status", "no-show")
+      .neq("status", "completed")
       .order("scheduled_time", { ascending: true });
 
     if (error) {
@@ -108,6 +111,20 @@ export default function LiveQueue() {
   };
 
   const handleStartConsultation = async (id: string) => {
+    // Check if there's already a patient in consultation
+    const inConsultation = appointments.find((a) => a.status === "in-consultation");
+    
+    if (inConsultation) {
+      toast({
+        title: "تنبيه",
+        description: "يوجد مريض آخر في الاستشارة حالياً. يرجى إنهاء الاستشارة الحالية أولاً.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const appointment = appointments.find((a) => a.id === id);
+    
     const { error } = await supabase
       .from("appointments")
       .update({ status: "in-consultation" })
@@ -124,6 +141,11 @@ export default function LiveQueue() {
         title: "تم بنجاح",
         description: "تم بدء الاستشارة",
       });
+      
+      // Navigate to patient profile if patient_id exists
+      if (appointment?.patient_id) {
+        navigate(`/patient/${appointment.patient_id}?consultation=true`);
+      }
     }
   };
 
