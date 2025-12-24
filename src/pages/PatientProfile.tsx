@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { ArrowRight, Stethoscope, RefreshCw } from "lucide-react";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { ArrowRight, Stethoscope, RefreshCw, CheckCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PatientInfo, type Patient } from "@/components/emr/PatientInfo";
@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function PatientProfile() {
   const { patientId } = useParams<{ patientId: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -18,6 +19,8 @@ export default function PatientProfile() {
   const [visits, setVisits] = useState<Visit[]>([]);
   const [loading, setLoading] = useState(true);
   const [showConsultation, setShowConsultation] = useState(false);
+  const [isInActiveConsultation, setIsInActiveConsultation] = useState(false);
+  const [activeAppointmentId, setActiveAppointmentId] = useState<string | null>(null);
 
   const fetchPatientData = async () => {
     if (!patientId) return;
@@ -46,6 +49,22 @@ export default function PatientProfile() {
       setPatient(patientData as Patient);
     }
 
+    // Check if patient has an active consultation
+    const { data: appointmentData } = await supabase
+      .from("appointments")
+      .select("*")
+      .eq("patient_id", patientId)
+      .eq("status", "in-consultation")
+      .maybeSingle();
+
+    if (appointmentData) {
+      setIsInActiveConsultation(true);
+      setActiveAppointmentId(appointmentData.id);
+    } else {
+      setIsInActiveConsultation(false);
+      setActiveAppointmentId(null);
+    }
+
     // Fetch visits with prescriptions
     const { data: visitsData, error: visitsError } = await supabase
       .from("visits")
@@ -67,7 +86,37 @@ export default function PatientProfile() {
 
   useEffect(() => {
     fetchPatientData();
-  }, [patientId]);
+    
+    // Check if we should open consultation from query param
+    if (searchParams.get("consultation") === "true") {
+      setShowConsultation(true);
+    }
+  }, [patientId, searchParams]);
+
+  const handleEndConsultation = async () => {
+    if (!activeAppointmentId) return;
+
+    const { error } = await supabase
+      .from("appointments")
+      .update({ status: "completed" })
+      .eq("id", activeAppointmentId);
+
+    if (error) {
+      toast({
+        title: "خطأ",
+        description: "فشل في إنهاء الاستشارة",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "تم بنجاح",
+        description: "تم إنهاء الاستشارة. المريض التالي في الانتظار.",
+      });
+      setIsInActiveConsultation(false);
+      setActiveAppointmentId(null);
+      navigate("/queue");
+    }
+  };
 
   const handleSaveConsultation = async (data: ConsultationData) => {
     if (!patient) return;
@@ -162,7 +211,7 @@ export default function PatientProfile() {
       <AppLayout>
         <div className="flex flex-col items-center justify-center h-full text-center" dir="rtl">
           <p className="text-lg text-muted-foreground mb-4">لم يتم العثور على المريض</p>
-          <Button onClick={() => navigate("/")}>
+          <Button onClick={() => navigate("/queue")}>
             العودة للقائمة
           </Button>
         </div>
@@ -179,7 +228,7 @@ export default function PatientProfile() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => navigate("/")}
+              onClick={() => navigate("/queue")}
               className="rounded-full"
             >
               <ArrowRight className="h-5 w-5" />
@@ -189,15 +238,38 @@ export default function PatientProfile() {
               <p className="text-muted-foreground">عرض السجل الطبي الكامل</p>
             </div>
           </div>
-          <Button 
-            onClick={() => setShowConsultation(true)}
-            className="gap-2"
-            size="lg"
-          >
-            <Stethoscope className="h-5 w-5" />
-            <span>بدء استشارة</span>
-          </Button>
+          <div className="flex items-center gap-3">
+            {isInActiveConsultation && (
+              <Button 
+                onClick={handleEndConsultation}
+                variant="outline"
+                className="gap-2 border-green-500 text-green-600 hover:bg-green-50"
+                size="lg"
+              >
+                <CheckCircle className="h-5 w-5" />
+                <span>إنهاء الاستشارة</span>
+              </Button>
+            )}
+            <Button 
+              onClick={() => setShowConsultation(true)}
+              className="gap-2"
+              size="lg"
+            >
+              <Stethoscope className="h-5 w-5" />
+              <span>بدء استشارة</span>
+            </Button>
+          </div>
         </div>
+
+        {/* Active Consultation Banner */}
+        {isInActiveConsultation && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
+              <span className="text-green-700 font-medium">هذا المريض في استشارة نشطة حالياً</span>
+            </div>
+          </div>
+        )}
 
         {/* Split View */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
