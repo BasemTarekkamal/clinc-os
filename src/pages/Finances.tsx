@@ -1,6 +1,9 @@
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Wallet, Download } from "lucide-react";
+import { Download, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { RevenueSummary } from "@/components/finances/RevenueSummary";
+import { DailyLedger } from "@/components/finances/DailyLedger";
+import { FastTrackSettings } from "@/components/settings/FastTrackSettings";
 
 export default function Finances() {
   return (
@@ -15,26 +18,27 @@ export default function Finances() {
               إدارة الفواتير والمدفوعات
             </p>
           </div>
-          <Button variant="outline" className="gap-2">
-            <Download className="h-4 w-4" />
-            <span>تصدير التقرير</span>
-          </Button>
-        </div>
-
-        {/* Coming Soon */}
-        <div className="bg-card rounded-2xl p-12 border text-center">
-          <div className="flex flex-col items-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-accent mb-4">
-              <Wallet className="h-8 w-8 text-primary" />
-            </div>
-            <h3 className="text-lg font-semibold text-foreground mb-2">
-              نظام الفواتير والمدفوعات
-            </h3>
-            <p className="text-muted-foreground max-w-md">
-              سيتم إضافة نظام إدارة الفواتير والتقارير المالية في التحديثات القادمة
-            </p>
+          <div className="flex gap-2">
+            <FastTrackSettings 
+              trigger={
+                <Button variant="outline" className="gap-2">
+                  <Settings className="h-4 w-4" />
+                  <span>إعدادات المسار السريع</span>
+                </Button>
+              }
+            />
+            <Button variant="outline" className="gap-2">
+              <Download className="h-4 w-4" />
+              <span>تصدير التقرير</span>
+            </Button>
           </div>
         </div>
+
+        {/* Revenue Summary Cards */}
+        <RevenueSummary />
+
+        {/* Daily Ledger */}
+        <DailyLedger />
       </div>
     </AppLayout>
   );
