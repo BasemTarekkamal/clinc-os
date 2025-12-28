@@ -58,28 +58,38 @@ serve(async (req) => {
       new Date(a.scheduled_time).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })
     );
 
-    const systemPrompt = `أنت مساعد طبي ذكي في عيادة طبية. تتحدث العربية بطلاقة.
+    const systemPrompt = `انت مساعد طبي في عيادة. لازم تتكلم بالمصري العامي.
 
-معلومات مهمة:
-- سعر الكشف العادي: 350 جنيه
-- سعر الكشف الشامل: 500 جنيه
-- سعر المتابعة: 200 جنيه
-- المواعيد المحجوزة اليوم: ${bookedTimes.join(', ') || 'لا توجد مواعيد محجوزة'}
+## طريقة الكلام:
+- استخدم كلمات زي: "أهلاً"، "إزيك"، "تمام"، "حاضر"، "ماشي"، "إن شاء الله"
+- خليك ودود وبسيط في الكلام
+- استخدم "حضرتك" للاحترام
 
-يمكنك:
-1. الإجابة على أسئلة المرضى عن الأسعار والمواعيد
-2. حجز مواعيد جديدة للمرضى
-3. تأكيد أو إلغاء المواعيد
+## خطوات المحادثة:
+1. أول حاجة: اسأل عن اسم المريض لو مش عارفه
+2. بعدين: اسأل "إيه اللي حاسس بيه؟" أو "إيه الشكوى؟"
+3. لو عايز يحجز: اسأله عن الوقت المناسب
 
-عند حجز موعد، استخدم الأداة book_appointment مع الوقت المطلوب.
-كن ودوداً ومحترفاً في ردودك.`;
+## معلومات العيادة:
+- الكشف العادي: 350 جنيه
+- الكشف الشامل: 500 جنيه  
+- المتابعة: 200 جنيه
+- المواعيد المحجوزة النهارده: ${bookedTimes.join(', ') || 'مفيش مواعيد محجوزة'}
+
+## لما تحجز موعد:
+- استخدم الأداة book_appointment
+- احفظ الشكوى في الحجز عشان الدكتور يشوفها
+
+مثال على الكلام:
+"أهلاً بيك! أنا المساعد الآلي للعيادة. ممكن أعرف اسم حضرتك؟"
+"تمام يا [الاسم]، إيه اللي حاسس بيه؟"`;
 
     const tools = [
       {
         type: "function",
         function: {
           name: "book_appointment",
-          description: "Book a new appointment for the patient",
+          description: "Book a new appointment for the patient with their complaint/condition",
           parameters: {
             type: "object",
             properties: {
@@ -87,12 +97,20 @@ serve(async (req) => {
                 type: "string",
                 description: "The appointment time in HH:MM format (24-hour)"
               },
+              patient_name: {
+                type: "string",
+                description: "The patient's name"
+              },
+              complaint: {
+                type: "string",
+                description: "The patient's complaint or medical condition"
+              },
               is_fast_track: {
                 type: "boolean",
                 description: "Whether this is a fast-track appointment"
               }
             },
-            required: ["time"]
+            required: ["time", "patient_name"]
           }
         }
       }
@@ -134,6 +152,8 @@ serve(async (req) => {
           const args = JSON.parse(toolCall.function.arguments);
           const timeStr = args.time;
           const isFastTrack = args.is_fast_track || false;
+          const appointmentPatientName = args.patient_name || patientName;
+          const complaint = args.complaint || '';
 
           // Create appointment date
           const appointmentDate = new Date();
@@ -144,7 +164,7 @@ serve(async (req) => {
           const { data: newAppointment, error: appointmentError } = await supabase
             .from('appointments')
             .insert({
-              patient_name: patientName,
+              patient_name: appointmentPatientName,
               scheduled_time: appointmentDate.toISOString(),
               status: 'booked',
               is_fast_track: isFastTrack
@@ -154,10 +174,17 @@ serve(async (req) => {
 
           if (appointmentError) {
             console.error('Error creating appointment:', appointmentError);
-            aiResponse = 'عذراً، حدث خطأ أثناء حجز الموعد. يرجى المحاولة مرة أخرى.';
+            aiResponse = 'معلش، حصل مشكلة في الحجز. ممكن نجرب تاني؟';
           } else {
             appointmentBooked = newAppointment;
-            aiResponse = `تم حجز موعدك بنجاح! 🎉\n\nتفاصيل الموعد:\n- الوقت: ${appointmentDate.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}\n- النوع: ${isFastTrack ? 'مسار سريع' : 'كشف عادي'}\n\nسنراك في الموعد!`;
+            const timeFormatted = appointmentDate.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+            aiResponse = `تمام يا ${appointmentPatientName}! 🎉 تم حجز موعدك
+
+⏰ الميعاد: ${timeFormatted}
+${complaint ? `📋 الشكوى: ${complaint}` : ''}
+${isFastTrack ? '⚡ مسار سريع' : ''}
+
+هنستناك في الميعاد إن شاء الله!`;
           }
         }
       }
