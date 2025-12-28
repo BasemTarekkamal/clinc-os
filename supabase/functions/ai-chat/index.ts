@@ -17,7 +17,7 @@ serve(async (req) => {
   }
 
   try {
-    const { conversationId, message, patientName } = await req.json();
+    const { conversationId, message, patientName, patientPhone } = await req.json();
 
     if (!OPENAI_API_KEY) {
       throw new Error('OPENAI_API_KEY is not configured');
@@ -58,28 +58,42 @@ serve(async (req) => {
       new Date(a.scheduled_time).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })
     );
 
-    const systemPrompt = `أنت مساعد طبي ذكي في عيادة طبية. تتحدث العربية بطلاقة.
+    // Egyptian Arabic system prompt
+    const systemPrompt = `انت مساعد طبي في عيادة دكتور. بتتكلم مصري عادي زي ما المصريين بيتكلموا.
 
-معلومات مهمة:
+الشخصية بتاعتك:
+- اتكلم بالعامية المصرية (يعني/طيب/حضرتك/ان شاء الله/ماشي)
+- كن ودود ولطيف زي ما بتكلم حد من العيلة
+- استخدم كلمات زي: أيوه، إزيك، تمام، الحمد لله، معلش
+
+الخطوات اللي لازم تمشي عليها:
+1. لو أول مرة تتكلم مع المريض، قول "أهلاً وسهلاً! إزيك؟ ممكن أعرف اسم حضرتك الكريم؟"
+2. بعد ما تعرف الاسم، قول "أهلاً يا [الاسم]! ممكن تقولي إيه اللي حاسس بيه أو الشكوى؟"
+3. بعد ما تعرف الشكوى، اعرض تحجزله موعد
+
+معلومات العيادة:
 - سعر الكشف العادي: 350 جنيه
-- سعر الكشف الشامل: 500 جنيه
+- سعر الكشف الشامل: 500 جنيه  
 - سعر المتابعة: 200 جنيه
-- المواعيد المحجوزة اليوم: ${bookedTimes.join(', ') || 'لا توجد مواعيد محجوزة'}
+- المواعيد المحجوزة النهاردة: ${bookedTimes.join('، ') || 'مفيش مواعيد محجوزة'}
+- ساعات العمل: من 10 الصبح لـ 8 بالليل
 
-يمكنك:
-1. الإجابة على أسئلة المرضى عن الأسعار والمواعيد
-2. حجز مواعيد جديدة للمرضى
-3. تأكيد أو إلغاء المواعيد
+لما تحجز موعد:
+- استخدم الأداة book_appointment
+- لازم تبعت الشكوى الطبية في chief_complaint
+- لو المريض قال اسمه، ابعته في patient_name_from_chat
 
-عند حجز موعد، استخدم الأداة book_appointment مع الوقت المطلوب.
-كن ودوداً ومحترفاً في ردودك.`;
+أمثلة على طريقة الكلام:
+- "تمام يا فندم، هحجزلك موعد الساعة 3 العصر، مناسب؟"
+- "ربنا يشفيك ويعافيك، هنستناك في العيادة"
+- "معلش على اللي بتحس بيه، بس متقلقش هنساعدك"`;
 
     const tools = [
       {
         type: "function",
         function: {
           name: "book_appointment",
-          description: "Book a new appointment for the patient",
+          description: "Book a new appointment for the patient. Use this when patient agrees to book.",
           parameters: {
             type: "object",
             properties: {
@@ -90,6 +104,14 @@ serve(async (req) => {
               is_fast_track: {
                 type: "boolean",
                 description: "Whether this is a fast-track appointment"
+              },
+              chief_complaint: {
+                type: "string",
+                description: "The patient's main complaint or symptoms in Arabic"
+              },
+              patient_name_from_chat: {
+                type: "string",
+                description: "The patient's name if they provided it during the conversation"
               }
             },
             required: ["time"]
@@ -134,17 +156,60 @@ serve(async (req) => {
           const args = JSON.parse(toolCall.function.arguments);
           const timeStr = args.time;
           const isFastTrack = args.is_fast_track || false;
+          const chiefComplaint = args.chief_complaint || null;
+          const patientNameFromChat = args.patient_name_from_chat || patientName;
 
           // Create appointment date
           const appointmentDate = new Date();
           const [hours, minutes] = timeStr.split(':');
           appointmentDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
 
-          // Insert appointment
+          // Try to find or create patient
+          let patientId = null;
+          
+          // First try to find by phone
+          if (patientPhone) {
+            const { data: existingPatient } = await supabase
+              .from('patients')
+              .select('id')
+              .eq('phone', patientPhone)
+              .single();
+            
+            if (existingPatient) {
+              patientId = existingPatient.id;
+              console.log('Found existing patient by phone:', patientId);
+            }
+          }
+
+          // If no patient found, create one
+          if (!patientId) {
+            const { data: newPatient, error: patientError } = await supabase
+              .from('patients')
+              .insert({
+                name: patientNameFromChat,
+                name_ar: patientNameFromChat,
+                age: 0, // Unknown, will be updated later
+                gender: 'male', // Default, will be updated later
+                phone: patientPhone || null,
+                chronic_conditions: chiefComplaint ? [chiefComplaint] : []
+              })
+              .select()
+              .single();
+
+            if (patientError) {
+              console.error('Error creating patient:', patientError);
+            } else {
+              patientId = newPatient.id;
+              console.log('Created new patient:', patientId);
+            }
+          }
+
+          // Insert appointment with patient_id
           const { data: newAppointment, error: appointmentError } = await supabase
             .from('appointments')
             .insert({
-              patient_name: patientName,
+              patient_name: patientNameFromChat,
+              patient_id: patientId,
               scheduled_time: appointmentDate.toISOString(),
               status: 'booked',
               is_fast_track: isFastTrack
@@ -154,10 +219,17 @@ serve(async (req) => {
 
           if (appointmentError) {
             console.error('Error creating appointment:', appointmentError);
-            aiResponse = 'عذراً، حدث خطأ أثناء حجز الموعد. يرجى المحاولة مرة أخرى.';
+            aiResponse = 'معلش يا فندم، في مشكلة حصلت وانا بحجزلك. ممكن تجرب تاني؟';
           } else {
             appointmentBooked = newAppointment;
-            aiResponse = `تم حجز موعدك بنجاح! 🎉\n\nتفاصيل الموعد:\n- الوقت: ${appointmentDate.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}\n- النوع: ${isFastTrack ? 'مسار سريع' : 'كشف عادي'}\n\nسنراك في الموعد!`;
+            const timeFormatted = appointmentDate.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+            aiResponse = `تمام يا ${patientNameFromChat}! 🎉 حجزتلك موعد
+
+📅 الميعاد: النهاردة الساعة ${timeFormatted}
+${isFastTrack ? '⚡ مسار سريع' : '🏥 كشف عادي'}
+${chiefComplaint ? `📝 الشكوى: ${chiefComplaint}` : ''}
+
+هنستناك في العيادة يا فندم! ربنا يشفيك 💚`;
           }
         }
       }

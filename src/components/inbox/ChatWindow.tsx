@@ -122,7 +122,8 @@ export function ChatWindow({ conversation }: ChatWindowProps) {
           body: {
             conversationId: conversation.id,
             message: messageContent,
-            patientName: conversation.patient_name
+            patientName: conversation.patient_name,
+            patientPhone: conversation.patient_phone
           }
         });
 
