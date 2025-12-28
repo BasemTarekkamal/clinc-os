@@ -30,6 +30,10 @@ const mockData: LedgerEntry[] = [
   { id: "8", patientName: "هدى إبراهيم", serviceType: "consultation", price: 350, paymentMethod: "instapay", time: "14:30", status: "pending" },
 ];
 
+export function getLedgerData() {
+  return mockData;
+}
+
 const serviceLabels: Record<LedgerEntry["serviceType"], string> = {
   consultation: "استشارة",
   checkup: "كشف",

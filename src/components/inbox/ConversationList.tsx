@@ -1,6 +1,8 @@
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, Globe } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
 
 // WhatsApp and Messenger icons as inline SVGs for better styling
 function WhatsAppIcon({ className }: { className?: string }) {
@@ -19,144 +21,179 @@ function MessengerIcon({ className }: { className?: string }) {
   );
 }
 
-export interface Conversation {
-  id: string;
-  name: string;
-  lastMessage: string;
-  time: string;
-  unread: number;
-  source: "whatsapp" | "messenger";
-  avatar?: string;
-  isAiHandled: boolean;
+function WebsiteIcon({ className }: { className?: string }) {
+  return <Globe className={className} />;
 }
 
-const mockConversations: Conversation[] = [
-  {
-    id: "1",
-    name: "محمد أحمد",
-    lastMessage: "شكراً، سأكون في الموعد",
-    time: "منذ 5 د",
-    unread: 0,
-    source: "whatsapp",
-    isAiHandled: false,
-  },
-  {
-    id: "2",
-    name: "سارة علي",
-    lastMessage: "ما هو سعر الكشف؟",
-    time: "منذ 12 د",
-    unread: 1,
-    source: "whatsapp",
-    isAiHandled: true,
-  },
-  {
-    id: "3",
-    name: "أحمد خالد",
-    lastMessage: "هل يوجد موعد اليوم؟",
-    time: "منذ 25 د",
-    unread: 0,
-    source: "messenger",
-    isAiHandled: true,
-  },
-  {
-    id: "4",
-    name: "نورا حسن",
-    lastMessage: "تمام، شكراً للتأكيد",
-    time: "منذ ساعة",
-    unread: 0,
-    source: "whatsapp",
-    isAiHandled: false,
-  },
-  {
-    id: "5",
-    name: "عمر محمود",
-    lastMessage: "عايز أحجز موعد للكشف",
-    time: "منذ ساعتين",
-    unread: 2,
-    source: "messenger",
-    isAiHandled: true,
-  },
-];
+export interface Conversation {
+  id: string;
+  patient_name: string;
+  patient_phone: string | null;
+  source: "whatsapp" | "messenger" | "website";
+  is_ai_handled: boolean;
+  last_message: string | null;
+  last_message_time: string;
+  unread_count: number;
+}
+
+function formatTimeAgo(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return 'الآن';
+  if (diffMins < 60) return `منذ ${diffMins} د`;
+  if (diffHours < 24) return `منذ ${diffHours} ساعة`;
+  return `منذ ${diffDays} يوم`;
+}
 
 interface ConversationListProps {
   selectedId: string | null;
   onSelect: (conversation: Conversation) => void;
 }
 
+const sourceConfig = {
+  whatsapp: {
+    icon: WhatsAppIcon,
+    color: "bg-[#25D366]",
+    label: "واتساب"
+  },
+  messenger: {
+    icon: MessengerIcon,
+    color: "bg-[#0084FF]",
+    label: "ماسنجر"
+  },
+  website: {
+    icon: WebsiteIcon,
+    color: "bg-[#6366F1]",
+    label: "الموقع"
+  }
+};
+
 export function ConversationList({ selectedId, onSelect }: ConversationListProps) {
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchConversations = async () => {
+    const { data, error } = await supabase
+      .from('conversations')
+      .select('*')
+      .order('last_message_time', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching conversations:', error);
+    } else {
+      setConversations((data || []) as Conversation[]);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchConversations();
+
+    // Subscribe to realtime updates
+    const channel = supabase
+      .channel('conversations-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'conversations' },
+        () => fetchConversations()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const unreadCount = conversations.filter(c => c.unread_count > 0).length;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full">
       <div className="p-4 border-b">
         <h3 className="font-semibold text-foreground">المحادثات</h3>
         <p className="text-sm text-muted-foreground">
-          {mockConversations.filter(c => c.unread > 0).length} رسائل غير مقروءة
+          {unreadCount} رسائل غير مقروءة
         </p>
       </div>
       <div className="flex-1 overflow-y-auto">
-        {mockConversations.map((conversation) => (
-          <button
-            key={conversation.id}
-            onClick={() => onSelect(conversation)}
-            className={cn(
-              "w-full p-4 flex items-start gap-3 border-b transition-colors text-right",
-              "hover:bg-accent/50",
-              selectedId === conversation.id && "bg-accent"
-            )}
-          >
-            {/* Avatar */}
-            <div className="relative shrink-0">
-              <div className="h-12 w-12 rounded-full bg-secondary flex items-center justify-center">
-                <span className="text-lg font-medium text-secondary-foreground">
-                  {conversation.name.charAt(0)}
-                </span>
-              </div>
-              {/* Source Icon */}
-              <div className={cn(
-                "absolute -bottom-1 -left-1 h-5 w-5 rounded-full flex items-center justify-center",
-                conversation.source === "whatsapp" 
-                  ? "bg-[#25D366]" 
-                  : "bg-[#0084FF]"
-              )}>
-                {conversation.source === "whatsapp" ? (
-                  <WhatsAppIcon className="h-3 w-3 text-white" />
-                ) : (
-                  <MessengerIcon className="h-3 w-3 text-white" />
-                )}
-              </div>
-            </div>
+        {conversations.map((conversation) => {
+          const SourceIcon = sourceConfig[conversation.source]?.icon || WebsiteIcon;
+          const sourceColor = sourceConfig[conversation.source]?.color || "bg-gray-500";
 
-            {/* Content */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between gap-2 mb-1">
-                <span className="font-medium text-foreground truncate">
-                  {conversation.name}
-                </span>
-                <span className="text-xs text-muted-foreground shrink-0">
-                  {conversation.time}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <p className="text-sm text-muted-foreground truncate flex-1">
-                  {conversation.lastMessage}
-                </p>
-                {conversation.unread > 0 && (
-                  <Badge className="h-5 min-w-[20px] rounded-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]">
-                    {conversation.unread}
-                  </Badge>
-                )}
-              </div>
-              {conversation.isAiHandled && (
-                <div className="flex items-center gap-1 mt-1">
-                  <MessageCircle className="h-3 w-3 text-[hsl(var(--success))]" />
-                  <span className="text-xs text-[hsl(var(--success))]">AI يرد</span>
-                </div>
+          return (
+            <button
+              key={conversation.id}
+              onClick={() => onSelect(conversation)}
+              className={cn(
+                "w-full p-4 flex items-start gap-3 border-b transition-colors text-right",
+                "hover:bg-accent/50",
+                selectedId === conversation.id && "bg-accent"
               )}
-            </div>
-          </button>
-        ))}
+            >
+              {/* Avatar */}
+              <div className="relative shrink-0">
+                <div className="h-12 w-12 rounded-full bg-secondary flex items-center justify-center">
+                  <span className="text-lg font-medium text-secondary-foreground">
+                    {conversation.patient_name.charAt(0)}
+                  </span>
+                </div>
+                {/* Source Icon */}
+                <div className={cn(
+                  "absolute -bottom-1 -left-1 h-5 w-5 rounded-full flex items-center justify-center",
+                  sourceColor
+                )}>
+                  <SourceIcon className="h-3 w-3 text-white" />
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <span className="font-medium text-foreground truncate">
+                    {conversation.patient_name}
+                  </span>
+                  <span className="text-xs text-muted-foreground shrink-0">
+                    {formatTimeAgo(conversation.last_message_time)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm text-muted-foreground truncate flex-1">
+                    {conversation.last_message || 'لا توجد رسائل'}
+                  </p>
+                  {conversation.unread_count > 0 && (
+                    <Badge className="h-5 min-w-[20px] rounded-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]">
+                      {conversation.unread_count}
+                    </Badge>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  {conversation.is_ai_handled && (
+                    <div className="flex items-center gap-1">
+                      <MessageCircle className="h-3 w-3 text-[hsl(var(--success))]" />
+                      <span className="text-xs text-[hsl(var(--success))]">AI يرد</span>
+                    </div>
+                  )}
+                  <Badge variant="outline" className="text-xs px-1.5 py-0">
+                    {sourceConfig[conversation.source]?.label || conversation.source}
+                  </Badge>
+                </div>
+              </div>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
 }
-
-export { mockConversations };
