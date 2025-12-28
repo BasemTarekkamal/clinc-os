@@ -10,6 +10,7 @@ import PatientProfile from "./pages/PatientProfile";
 import Messages from "./pages/Messages";
 import Finances from "./pages/Finances";
 import SmartInbox from "./pages/SmartInbox";
+import Calendar from "./pages/Calendar";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/patient/:patientId" element={<PatientProfile />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/inbox" element={<SmartInbox />} />
+          <Route path="/calendar" element={<Calendar />} />
           <Route path="/finances" element={<Finances />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

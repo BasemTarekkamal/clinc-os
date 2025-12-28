@@ -8,7 +8,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Stethoscope,
-  Bot
+  Bot,
+  CalendarDays
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ interface SidebarProps {
 const navItems = [
   { icon: LayoutDashboard, label: "لوحة التحكم", labelEn: "Dashboard", path: "/dashboard" },
   { icon: ClipboardList, label: "قائمة الانتظار", labelEn: "Live Queue", path: "/queue" },
+  { icon: CalendarDays, label: "التقويم", labelEn: "Calendar", path: "/calendar" },
   { icon: Users, label: "المرضى", labelEn: "Patients (EMR)", path: "/patients" },
   { icon: Bot, label: "صندوق الوارد الذكي", labelEn: "Smart Inbox", path: "/inbox" },
   { icon: MessageSquare, label: "الرسائل", labelEn: "Messages", path: "/messages" },
