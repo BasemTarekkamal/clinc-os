@@ -3,11 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { PatientCard, type Appointment } from "@/components/queue/PatientCard";
 import { QueueStats } from "@/components/queue/QueueStats";
-import { AppointmentCalendar } from "@/components/queue/AppointmentCalendar";
 import { useToast } from "@/hooks/use-toast";
-import { RefreshCw, Users, CalendarDays, ListChecks } from "lucide-react";
+import { RefreshCw, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function LiveQueue() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -159,75 +157,56 @@ export default function LiveQueue() {
   const remaining = total - checkedIn;
 
   return (
-    <Tabs defaultValue="queue" className="h-full" dir="rtl">
-      <div className="flex items-center justify-between mb-6">
-        <TabsList>
-          <TabsTrigger value="queue" className="gap-2">
-            <ListChecks className="h-4 w-4" />
-            قائمة الانتظار
-          </TabsTrigger>
-          <TabsTrigger value="calendar" className="gap-2">
-            <CalendarDays className="h-4 w-4" />
-            التقويم
-          </TabsTrigger>
-        </TabsList>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={fetchAppointments}
-          disabled={loading}
-          className="gap-2"
-        >
-          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-          <span>تحديث</span>
-        </Button>
+    <div className="flex gap-6 h-full" dir="rtl">
+      {/* Stats Panel - 30% */}
+      <div className="w-[30%] min-w-[280px]">
+        <div className="sticky top-0 bg-card rounded-2xl p-6 border shadow-sm">
+          <QueueStats total={total} checkedIn={checkedIn} remaining={remaining} />
+        </div>
       </div>
 
-      <TabsContent value="queue" className="mt-0">
-        <div className="flex gap-6 h-full">
-          {/* Stats Panel - 30% */}
-          <div className="w-[30%] min-w-[280px]">
-            <div className="sticky top-0 bg-card rounded-2xl p-6 border shadow-sm">
-              <QueueStats total={total} checkedIn={checkedIn} remaining={remaining} />
-            </div>
-          </div>
-
-          {/* Active Queue List - 70% */}
-          <div className="flex-1">
-            <h2 className="text-xl font-semibold text-foreground mb-4">
-              قائمة الانتظار النشطة
-            </h2>
-
-            {loading ? (
-              <div className="flex items-center justify-center h-64">
-                <RefreshCw className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : appointments.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-                <Users className="h-12 w-12 mb-4" />
-                <p className="text-lg">لا توجد مواعيد اليوم</p>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {appointments.map((appointment) => (
-                  <PatientCard
-                    key={appointment.id}
-                    appointment={appointment}
-                    onCheckIn={handleCheckIn}
-                    onSendReminder={handleSendReminder}
-                    onNoShow={handleNoShow}
-                    onStartConsultation={handleStartConsultation}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+      {/* Active Queue List - 70% */}
+      <div className="flex-1">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-semibold text-foreground">
+            قائمة الانتظار النشطة
+          </h2>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchAppointments}
+            disabled={loading}
+            className="gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            <span>تحديث</span>
+          </Button>
         </div>
-      </TabsContent>
 
-      <TabsContent value="calendar" className="mt-0">
-        <AppointmentCalendar />
-      </TabsContent>
-    </Tabs>
+        {loading ? (
+          <div className="flex items-center justify-center h-64">
+            <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : appointments.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+            <Users className="h-12 w-12 mb-4" />
+            <p className="text-lg">لا توجد مواعيد اليوم</p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {appointments.map((appointment) => (
+              <PatientCard
+                key={appointment.id}
+                appointment={appointment}
+                onCheckIn={handleCheckIn}
+                onSendReminder={handleSendReminder}
+                onNoShow={handleNoShow}
+                onStartConsultation={handleStartConsultation}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
