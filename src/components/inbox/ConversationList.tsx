@@ -1,8 +1,25 @@
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { MessageCircle, Globe } from "lucide-react";
+import { MessageCircle, Globe, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 // WhatsApp and Messenger icons as inline SVGs for better styling
 function WhatsAppIcon({ className }: { className?: string }) {
@@ -76,6 +93,12 @@ const sourceConfig = {
 export function ConversationList({ selectedId, onSelect }: ConversationListProps) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [newPatientName, setNewPatientName] = useState("");
+  const [newPatientPhone, setNewPatientPhone] = useState("");
+  const [newSource, setNewSource] = useState<"whatsapp" | "messenger" | "website">("whatsapp");
+  const [creating, setCreating] = useState(false);
+  const { toast } = useToast();
 
   const fetchConversations = async () => {
     const { data, error } = await supabase
@@ -109,6 +132,54 @@ export function ConversationList({ selectedId, onSelect }: ConversationListProps
     };
   }, []);
 
+  const handleCreateConversation = async () => {
+    if (!newPatientName.trim()) {
+      toast({
+        title: "خطأ",
+        description: "يرجى إدخال اسم المريض",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setCreating(true);
+    const { data, error } = await supabase
+      .from('conversations')
+      .insert({
+        patient_name: newPatientName.trim(),
+        patient_phone: newPatientPhone.trim() || null,
+        source: newSource,
+        is_ai_handled: true,
+        last_message: null,
+        last_message_time: new Date().toISOString(),
+        unread_count: 0
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating conversation:', error);
+      toast({
+        title: "خطأ",
+        description: "فشل في إنشاء المحادثة",
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: "تم",
+        description: "تم إنشاء محادثة جديدة"
+      });
+      setDialogOpen(false);
+      setNewPatientName("");
+      setNewPatientPhone("");
+      setNewSource("whatsapp");
+      if (data) {
+        onSelect(data as Conversation);
+      }
+    }
+    setCreating(false);
+  };
+
   const unreadCount = conversations.filter(c => c.unread_count > 0).length;
 
   if (loading) {
@@ -122,7 +193,60 @@ export function ConversationList({ selectedId, onSelect }: ConversationListProps
   return (
     <div className="flex flex-col h-full">
       <div className="p-4 border-b">
-        <h3 className="font-semibold text-foreground">المحادثات</h3>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="font-semibold text-foreground">المحادثات</h3>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" variant="outline" className="gap-1">
+                <Plus className="h-4 w-4" />
+                <span>جديد</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent dir="rtl">
+              <DialogHeader>
+                <DialogTitle>محادثة جديدة</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 pt-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">اسم المريض *</label>
+                  <Input
+                    value={newPatientName}
+                    onChange={(e) => setNewPatientName(e.target.value)}
+                    placeholder="أدخل اسم المريض"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">رقم الهاتف</label>
+                  <Input
+                    value={newPatientPhone}
+                    onChange={(e) => setNewPatientPhone(e.target.value)}
+                    placeholder="+20xxxxxxxxxx"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">المصدر</label>
+                  <Select value={newSource} onValueChange={(v) => setNewSource(v as any)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="whatsapp">واتساب</SelectItem>
+                      <SelectItem value="messenger">ماسنجر</SelectItem>
+                      <SelectItem value="website">الموقع</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button 
+                  onClick={handleCreateConversation} 
+                  className="w-full"
+                  disabled={creating}
+                >
+                  {creating ? "جاري الإنشاء..." : "إنشاء المحادثة"}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
         <p className="text-sm text-muted-foreground">
           {unreadCount} رسائل غير مقروءة
         </p>

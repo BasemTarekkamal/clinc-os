@@ -42,21 +42,56 @@ serve(async (req) => {
     // Add current message
     conversationHistory.push({ role: 'user', content: message });
 
-    // Get available appointment slots
+    // Get available appointment slots - calculate based on working hours and booked appointments
     const now = new Date();
     const endOfDay = new Date();
     endOfDay.setHours(23, 59, 59, 999);
 
+    // Fetch ALL booked appointments for today (statuses that block a slot)
     const { data: appointments } = await supabase
       .from('appointments')
-      .select('scheduled_time')
+      .select('scheduled_time, status')
       .gte('scheduled_time', now.toISOString())
-      .lte('scheduled_time', endOfDay.toISOString())
-      .in('status', ['booked', 'arrived', 'in-consultation']);
+      .lte('scheduled_time', endOfDay.toISOString());
 
-    const bookedTimes = (appointments || []).map((a: any) => 
-      new Date(a.scheduled_time).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })
-    );
+    // Get booked times (all statuses except cancelled/no-show that block the slot)
+    const bookedSlots = (appointments || [])
+      .filter((a: any) => ['booked', 'arrived', 'in-consultation', 'waiting'].includes(a.status))
+      .map((a: any) => {
+        const date = new Date(a.scheduled_time);
+        return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+      });
+
+    // Generate all possible slots from 10:00 to 20:00 (every 30 minutes)
+    const allSlots: string[] = [];
+    for (let hour = 10; hour < 20; hour++) {
+      allSlots.push(`${hour.toString().padStart(2, '0')}:00`);
+      allSlots.push(`${hour.toString().padStart(2, '0')}:30`);
+    }
+
+    // Filter out booked slots and past slots
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    const availableSlots = allSlots.filter(slot => {
+      const [h, m] = slot.split(':').map(Number);
+      // Skip if already passed
+      if (h < currentHour || (h === currentHour && m <= currentMinute)) {
+        return false;
+      }
+      // Skip if already booked
+      return !bookedSlots.includes(slot);
+    });
+
+    // Format available slots for display in Arabic
+    const formatTimeArabic = (slot: string) => {
+      const [h, m] = slot.split(':').map(Number);
+      const period = h >= 12 ? 'م' : 'ص';
+      const displayHour = h > 12 ? h - 12 : (h === 0 ? 12 : h);
+      return `${displayHour}:${m.toString().padStart(2, '0')} ${period}`;
+    };
+
+    const availableSlotsArabic = availableSlots.map(formatTimeArabic);
+    const bookedSlotsArabic = bookedSlots.map(formatTimeArabic);
 
     // Egyptian Arabic system prompt
     const systemPrompt = `انت مساعد طبي في عيادة دكتور. بتتكلم مصري عادي زي ما المصريين بيتكلموا.
@@ -69,22 +104,29 @@ serve(async (req) => {
 الخطوات اللي لازم تمشي عليها:
 1. لو أول مرة تتكلم مع المريض، قول "أهلاً وسهلاً! إزيك؟ ممكن أعرف اسم حضرتك الكريم؟"
 2. بعد ما تعرف الاسم، قول "أهلاً يا [الاسم]! ممكن تقولي إيه اللي حاسس بيه أو الشكوى؟"
-3. بعد ما تعرف الشكوى، اعرض تحجزله موعد
+3. بعد ما تعرف الشكوى، اعرض المواعيد المتاحة واسأله يختار واحد منهم
+
+⚠️ قواعد مهمة جداً للحجز:
+- لازم تحجز بس في المواعيد المتاحة المذكورة تحت
+- لو المريض طلب وقت مش متاح، قوله "معلش الوقت ده محجوز، المواعيد المتاحة هي: [اذكر المتاح]"
+- ممنوع تحجز في أي وقت مش موجود في قائمة المتاح
 
 معلومات العيادة:
 - سعر الكشف العادي: 350 جنيه
 - سعر الكشف الشامل: 500 جنيه  
 - سعر المتابعة: 200 جنيه
-- المواعيد المحجوزة النهاردة: ${bookedTimes.join('، ') || 'مفيش مواعيد محجوزة'}
 - ساعات العمل: من 10 الصبح لـ 8 بالليل
+- المواعيد المحجوزة: ${bookedSlotsArabic.join('، ') || 'مفيش مواعيد محجوزة'}
+- المواعيد المتاحة للحجز: ${availableSlotsArabic.length > 0 ? availableSlotsArabic.join('، ') : 'للأسف مفيش مواعيد متاحة النهاردة'}
 
 لما تحجز موعد:
 - استخدم الأداة book_appointment
 - لازم تبعت الشكوى الطبية في chief_complaint
 - لو المريض قال اسمه، ابعته في patient_name_from_chat
+- استخدم فقط الأوقات المتاحة المذكورة أعلاه
 
 أمثلة على طريقة الكلام:
-- "تمام يا فندم، هحجزلك موعد الساعة 3 العصر، مناسب؟"
+- "تمام يا فندم، المواعيد المتاحة عندنا هي ${availableSlotsArabic.slice(0, 3).join(' و')}، تحب أحجزلك أنهي واحد؟"
 - "ربنا يشفيك ويعافيك، هنستناك في العيادة"
 - "معلش على اللي بتحس بيه، بس متقلقش هنساعدك"`;
 
