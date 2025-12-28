@@ -61,6 +61,45 @@ export type Database = {
           },
         ]
       }
+      conversations: {
+        Row: {
+          created_at: string
+          id: string
+          is_ai_handled: boolean
+          last_message: string | null
+          last_message_time: string | null
+          patient_name: string
+          patient_phone: string | null
+          source: string
+          unread_count: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_ai_handled?: boolean
+          last_message?: string | null
+          last_message_time?: string | null
+          patient_name: string
+          patient_phone?: string | null
+          source?: string
+          unread_count?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_ai_handled?: boolean
+          last_message?: string | null
+          last_message_time?: string | null
+          patient_name?: string
+          patient_phone?: string | null
+          source?: string
+          unread_count?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       medical_files: {
         Row: {
           category: string | null
@@ -108,6 +147,38 @@ export type Database = {
             columns: ["visit_id"]
             isOneToOne: false
             referencedRelation: "visits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          sender: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          sender: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          sender?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
             referencedColumns: ["id"]
           },
         ]
