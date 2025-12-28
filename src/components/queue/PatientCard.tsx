@@ -102,9 +102,14 @@ export function PatientCard({
 
   const handleStartConsultation = (e: React.MouseEvent) => {
     e.stopPropagation();
+    // Only call the parent handler to update status, it will handle navigation
     if (onStartConsultation) {
       onStartConsultation(appointment.id);
     }
+  };
+
+  const handleContinueConsultation = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (appointment.patient_id) {
       navigate(`/patient/${appointment.patient_id}?consultation=true`);
     }
@@ -194,6 +199,21 @@ export function PatientCard({
               "hover:bg-primary hover:text-primary-foreground hover:border-primary"
             )}
             title="بدء الاستشارة"
+          >
+            <Stethoscope className="h-5 w-5" />
+          </Button>
+        )}
+
+        {/* Continue Consultation - For in-consultation patients */}
+        {appointment.status === "in-consultation" && (
+          <Button
+            variant="default"
+            size="lg"
+            onClick={handleContinueConsultation}
+            className={cn(
+              "h-12 w-12 p-0 rounded-xl transition-all duration-200"
+            )}
+            title="متابعة الاستشارة"
           >
             <Stethoscope className="h-5 w-5" />
           </Button>
