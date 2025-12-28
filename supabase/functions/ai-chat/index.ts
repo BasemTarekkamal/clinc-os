@@ -93,6 +93,21 @@ serve(async (req) => {
     const availableSlotsArabic = availableSlots.map(formatTimeArabic);
     const bookedSlotsArabic = bookedSlots.map(formatTimeArabic);
 
+    // Get deposit settings
+    const { data: depositSettingsData } = await supabase
+      .from('clinic_settings')
+      .select('setting_value')
+      .eq('setting_key', 'consultation_deposit')
+      .single();
+
+    const depositSettings = depositSettingsData?.setting_value as { enabled: boolean; amount: number } | null;
+    const depositInfo = depositSettings?.enabled 
+      ? `- عربون الجدية: ${depositSettings.amount} جنيه (يُدفع عند الحجز ويُخصم من قيمة الكشف)`
+      : '';
+    const depositMention = depositSettings?.enabled
+      ? `\n⚠️ مهم: لازم تقول للمريض إن في عربون جدية ${depositSettings.amount} جنيه بيتدفع عند الحجز ويُخصم من قيمة الكشف.`
+      : '';
+
     // Egyptian Arabic system prompt
     const systemPrompt = `انت مساعد طبي في عيادة دكتور. بتتكلم مصري عادي زي ما المصريين بيتكلموا.
 
@@ -105,6 +120,7 @@ serve(async (req) => {
 1. لو أول مرة تتكلم مع المريض، قول "أهلاً وسهلاً! إزيك؟ ممكن أعرف اسم حضرتك الكريم؟"
 2. بعد ما تعرف الاسم، قول "أهلاً يا [الاسم]! ممكن تقولي إيه اللي حاسس بيه أو الشكوى؟"
 3. بعد ما تعرف الشكوى، اعرض المواعيد المتاحة واسأله يختار واحد منهم
+${depositMention}
 
 ⚠️ قواعد مهمة جداً للحجز:
 - لازم تحجز بس في المواعيد المتاحة المذكورة تحت
@@ -115,6 +131,7 @@ serve(async (req) => {
 - سعر الكشف العادي: 350 جنيه
 - سعر الكشف الشامل: 500 جنيه  
 - سعر المتابعة: 200 جنيه
+${depositInfo}
 - ساعات العمل: من 10 الصبح لـ 8 بالليل
 - المواعيد المحجوزة: ${bookedSlotsArabic.join('، ') || 'مفيش مواعيد محجوزة'}
 - المواعيد المتاحة للحجز: ${availableSlotsArabic.length > 0 ? availableSlotsArabic.join('، ') : 'للأسف مفيش مواعيد متاحة النهاردة'}
