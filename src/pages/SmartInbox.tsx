@@ -1,12 +1,10 @@
 import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { ConversationList, Conversation, mockConversations } from "@/components/inbox/ConversationList";
+import { ConversationList, Conversation } from "@/components/inbox/ConversationList";
 import { ChatWindow } from "@/components/inbox/ChatWindow";
 
 export default function SmartInbox() {
-  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(
-    mockConversations[1] // Pre-select the AI-handled conversation
-  );
+  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
 
   return (
     <AppLayout>
