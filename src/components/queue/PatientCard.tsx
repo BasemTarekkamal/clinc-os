@@ -34,6 +34,7 @@ interface PatientCardProps {
   onSendReminder: (id: string) => void;
   onNoShow: (id: string) => void;
   onStartConsultation?: (id: string) => void;
+  onEnsurePatient?: (appointmentId: string) => Promise<string | null>;
 }
 
 const statusConfig: Record<AppointmentStatus, { 
@@ -81,9 +82,11 @@ export function PatientCard({
   onCheckIn, 
   onSendReminder, 
   onNoShow,
-  onStartConsultation
+  onStartConsultation,
+  onEnsurePatient
 }: PatientCardProps) {
   const [isExiting, setIsExiting] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const navigate = useNavigate();
   const status = statusConfig[appointment.status];
 
@@ -94,9 +97,23 @@ export function PatientCard({
     }, 500);
   };
 
-  const handleOpenProfile = () => {
+  const handleOpenProfile = async () => {
+    if (isProcessing) return;
+    
+    // If patient_id exists, navigate directly
     if (appointment.patient_id) {
       navigate(`/patient/${appointment.patient_id}`);
+      return;
+    }
+
+    // Otherwise, ensure patient exists first
+    if (onEnsurePatient) {
+      setIsProcessing(true);
+      const patientId = await onEnsurePatient(appointment.id);
+      setIsProcessing(false);
+      if (patientId) {
+        navigate(`/patient/${patientId}`);
+      }
     }
   };
 
@@ -108,10 +125,24 @@ export function PatientCard({
     }
   };
 
-  const handleContinueConsultation = (e: React.MouseEvent) => {
+  const handleContinueConsultation = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (isProcessing) return;
+    
+    // If patient_id exists, navigate directly
     if (appointment.patient_id) {
       navigate(`/patient/${appointment.patient_id}?consultation=true`);
+      return;
+    }
+
+    // Otherwise, ensure patient exists first
+    if (onEnsurePatient) {
+      setIsProcessing(true);
+      const patientId = await onEnsurePatient(appointment.id);
+      setIsProcessing(false);
+      if (patientId) {
+        navigate(`/patient/${patientId}?consultation=true`);
+      }
     }
   };
 
@@ -127,7 +158,8 @@ export function PatientCard({
         "relative flex items-center gap-4 p-4 rounded-xl bg-card border transition-all duration-300",
         "hover:shadow-md slide-in cursor-pointer",
         status.borderClass,
-        isExiting && "fade-out"
+        isExiting && "fade-out",
+        isProcessing && "opacity-70 pointer-events-none"
       )}
       onClick={handleOpenProfile}
     >
