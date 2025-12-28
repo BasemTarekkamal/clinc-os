@@ -1,3 +1,4 @@
+// Smart Inbox - AI-powered chat management
 import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ConversationList, Conversation } from "@/components/inbox/ConversationList";
