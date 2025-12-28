@@ -59,6 +59,60 @@ export default function LiveQueue() {
     };
   }, [fetchAppointments]);
 
+  // Helper to ensure a patient record exists for an appointment
+  const ensurePatientForAppointment = async (appointment: Appointment): Promise<string | null> => {
+    // If patient_id already exists, return it
+    if (appointment.patient_id) {
+      return appointment.patient_id;
+    }
+
+    // Create a new patient record with minimal info
+    const { data: newPatient, error: createError } = await supabase
+      .from("patients")
+      .insert({
+        name: appointment.patient_name,
+        age: 0, // Unknown age, will display as "غير معروف"
+        gender: "male", // Default
+      })
+      .select()
+      .single();
+
+    if (createError || !newPatient) {
+      console.error("Error creating patient:", createError);
+      toast({
+        title: "خطأ",
+        description: "فشل في إنشاء ملف المريض",
+        variant: "destructive",
+      });
+      return null;
+    }
+
+    // Update the appointment with the new patient_id
+    const { error: updateError } = await supabase
+      .from("appointments")
+      .update({ patient_id: newPatient.id })
+      .eq("id", appointment.id);
+
+    if (updateError) {
+      console.error("Error updating appointment:", updateError);
+      toast({
+        title: "خطأ",
+        description: "فشل في ربط ملف المريض",
+        variant: "destructive",
+      });
+      return null;
+    }
+
+    // Update local state
+    setAppointments((prev) =>
+      prev.map((a) =>
+        a.id === appointment.id ? { ...a, patient_id: newPatient.id } : a
+      )
+    );
+
+    return newPatient.id;
+  };
+
   const handleCheckIn = async (id: string) => {
     const { error } = await supabase
       .from("appointments")
@@ -124,6 +178,11 @@ export default function LiveQueue() {
     }
 
     const appointment = appointments.find((a) => a.id === id);
+    if (!appointment) return;
+
+    // Ensure patient exists before starting consultation
+    const patientId = await ensurePatientForAppointment(appointment);
+    if (!patientId) return;
     
     const { error } = await supabase
       .from("appointments")
@@ -142,11 +201,16 @@ export default function LiveQueue() {
         description: "تم بدء الاستشارة",
       });
       
-      // Navigate to patient profile if patient_id exists
-      if (appointment?.patient_id) {
-        navigate(`/patient/${appointment.patient_id}?consultation=true`);
-      }
+      // Navigate to patient profile
+      navigate(`/patient/${patientId}?consultation=true`);
     }
+  };
+
+  // Handler for ensuring patient from PatientCard actions
+  const handleEnsurePatient = async (appointmentId: string): Promise<string | null> => {
+    const appointment = appointments.find((a) => a.id === appointmentId);
+    if (!appointment) return null;
+    return ensurePatientForAppointment(appointment);
   };
 
   // Calculate stats
@@ -202,6 +266,7 @@ export default function LiveQueue() {
                 onSendReminder={handleSendReminder}
                 onNoShow={handleNoShow}
                 onStartConsultation={handleStartConsultation}
+                onEnsurePatient={handleEnsurePatient}
               />
             ))}
           </div>

@@ -40,7 +40,7 @@ export function PatientInfo({ patient }: PatientInfoProps) {
             {patient.name_ar || patient.name}
           </h2>
           <p className="text-sm text-muted-foreground">
-            {patient.gender === "male" ? "ذكر" : "أنثى"} • {patient.age} سنة
+            {patient.gender === "male" ? "ذكر" : "أنثى"} • {patient.age > 0 ? `${patient.age} سنة` : "العمر غير معروف"}
           </p>
         </div>
       </div>
