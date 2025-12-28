@@ -23,6 +23,7 @@ export type Database = {
           patient_id: string | null
           patient_name: string
           patient_photo: string | null
+          reminder_sent: boolean
           scheduled_time: string
           status: string
           updated_at: string
@@ -35,6 +36,7 @@ export type Database = {
           patient_id?: string | null
           patient_name: string
           patient_photo?: string | null
+          reminder_sent?: boolean
           scheduled_time: string
           status?: string
           updated_at?: string
@@ -47,6 +49,7 @@ export type Database = {
           patient_id?: string | null
           patient_name?: string
           patient_photo?: string | null
+          reminder_sent?: boolean
           scheduled_time?: string
           status?: string
           updated_at?: string
@@ -60,6 +63,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      clinic_settings: {
+        Row: {
+          created_at: string
+          id: string
+          setting_key: string
+          setting_value: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          setting_key: string
+          setting_value: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          setting_key?: string
+          setting_value?: Json
+          updated_at?: string
+        }
+        Relationships: []
       }
       conversations: {
         Row: {

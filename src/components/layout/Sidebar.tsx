@@ -9,7 +9,8 @@ import {
   ChevronRight,
   Stethoscope,
   Bot,
-  CalendarDays
+  CalendarDays,
+  Settings
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ const navItems = [
   { icon: Bot, label: "صندوق الوارد الذكي", labelEn: "Smart Inbox", path: "/inbox" },
   { icon: MessageSquare, label: "الرسائل", labelEn: "Messages", path: "/messages" },
   { icon: Wallet, label: "المالية", labelEn: "Finances", path: "/finances" },
+  { icon: Settings, label: "الإعدادات", labelEn: "Settings", path: "/settings" },
 ];
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
