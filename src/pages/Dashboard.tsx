@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { AppLayout } from "@/components/layout/AppLayout";
+import { MobileLayout } from "@/components/layout/MobileLayout";
 import { 
   Users, 
   Calendar, 
@@ -38,26 +38,26 @@ function StatCard({ title, value, change, icon: Icon }: StatCardProps) {
   const isPositive = change >= 0;
   
   return (
-    <div className="bg-card rounded-2xl p-6 border shadow-sm hover:shadow-md transition-all duration-200">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-sm text-muted-foreground mb-1">{title}</p>
-          <p className="text-3xl font-bold text-foreground">{value}</p>
+    <div className="bg-card rounded-2xl p-4 border shadow-sm">
+      <div className="flex items-center justify-between">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent">
+          <Icon className="h-5 w-5 text-primary" />
         </div>
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent">
-          <Icon className="h-6 w-6 text-primary" />
+        <div className={cn(
+          "flex items-center gap-1 text-xs font-medium",
+          isPositive ? "text-success" : "text-destructive"
+        )}>
+          {isPositive ? (
+            <ArrowUpRight className="h-3 w-3" />
+          ) : (
+            <ArrowDownRight className="h-3 w-3" />
+          )}
+          <span>{Math.abs(change)}%</span>
         </div>
       </div>
-      <div className={cn(
-        "flex items-center gap-1 mt-4 text-sm font-medium",
-        isPositive ? "text-success" : "text-destructive"
-      )}>
-        {isPositive ? (
-          <ArrowUpRight className="h-4 w-4" />
-        ) : (
-          <ArrowDownRight className="h-4 w-4" />
-        )}
-        <span>{Math.abs(change)}% من الأسبوع الماضي</span>
+      <div className="mt-3">
+        <p className="text-2xl font-bold text-foreground">{value}</p>
+        <p className="text-xs text-muted-foreground mt-1">{title}</p>
       </div>
     </div>
   );
@@ -117,39 +117,31 @@ export default function Dashboard() {
     : 100;
 
   return (
-    <AppLayout>
-      <div className="space-y-6" dir="rtl">
+    <MobileLayout title="لوحة التحكم">
+      <div className="space-y-4" dir="rtl">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground mb-2">
-              لوحة التحكم
-            </h1>
-            <p className="text-muted-foreground">
-              مرحباً بك في نظام إدارة العيادة
-            </p>
-          </div>
+          <p className="text-sm text-muted-foreground">مرحباً بك</p>
           <Button
-            variant="outline"
-            size="sm"
+            variant="ghost"
+            size="icon"
             onClick={fetchData}
             disabled={loading}
-            className="gap-2"
+            className="h-9 w-9"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            <span>تحديث</span>
           </Button>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Stats Grid - 2x2 on mobile */}
+        <div className="grid grid-cols-2 gap-3">
           <StatCard 
-            title="إجمالي المرضى اليوم"
+            title="إجمالي المرضى"
             value={String(stats.totalToday)}
             change={12}
             icon={Users}
           />
           <StatCard 
-            title="المواعيد المكتملة"
+            title="المكتملة"
             value={String(stats.completed)}
             change={8}
             icon={Calendar}
@@ -170,55 +162,50 @@ export default function Dashboard() {
 
         {/* Completed Appointments Section */}
         <div className="bg-card rounded-2xl border shadow-sm">
-          <div className="p-6 border-b">
+          <div className="p-4 border-b">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-100">
-                <CheckCircle className="h-5 w-5 text-green-600" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-green-100">
+                <CheckCircle className="h-4 w-4 text-green-600" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-foreground">الاستشارات المكتملة</h2>
-                <p className="text-sm text-muted-foreground">آخر 10 استشارات تم إنهاؤها</p>
+                <h2 className="text-base font-semibold text-foreground">الاستشارات المكتملة</h2>
+                <p className="text-xs text-muted-foreground">آخر 10 استشارات</p>
               </div>
             </div>
           </div>
           
           {loading ? (
-            <div className="flex items-center justify-center p-12">
-              <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+            <div className="flex items-center justify-center p-8">
+              <RefreshCw className="h-6 w-6 animate-spin text-primary" />
             </div>
           ) : completedAppointments.length === 0 ? (
-            <div className="p-12 text-center">
-              <p className="text-muted-foreground">لا توجد استشارات مكتملة حتى الآن</p>
+            <div className="p-8 text-center">
+              <p className="text-sm text-muted-foreground">لا توجد استشارات مكتملة</p>
             </div>
           ) : (
-            <div className="divide-y">
+            <div className="divide-y max-h-[300px] overflow-y-auto">
               {completedAppointments.map((appointment) => (
                 <div 
                   key={appointment.id}
-                  className="p-4 hover:bg-muted/50 transition-colors cursor-pointer"
+                  className="p-3 active:bg-muted/50 transition-colors cursor-pointer"
                   onClick={() => appointment.patient_id && navigate(`/patient/${appointment.patient_id}`)}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold text-sm">
                         {appointment.patient_name[0]}
                       </div>
                       <div>
-                        <p className="font-medium text-foreground">{appointment.patient_name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {format(new Date(appointment.scheduled_time), "dd MMMM yyyy - hh:mm a", { locale: ar })}
+                        <p className="font-medium text-foreground text-sm">{appointment.patient_name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {format(new Date(appointment.scheduled_time), "dd MMM - hh:mm a", { locale: ar })}
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {appointment.is_fast_track && (
-                        <Badge variant="secondary" className="text-xs">سريع</Badge>
-                      )}
-                      <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">
-                        <CheckCircle className="h-3 w-3 me-1" />
-                        مكتمل
-                      </Badge>
-                    </div>
+                    <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50 text-xs">
+                      <CheckCircle className="h-3 w-3 me-1" />
+                      مكتمل
+                    </Badge>
                   </div>
                 </div>
               ))}
@@ -226,6 +213,6 @@ export default function Dashboard() {
           )}
         </div>
       </div>
-    </AppLayout>
+    </MobileLayout>
   );
 }

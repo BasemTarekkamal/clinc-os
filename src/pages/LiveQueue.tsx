@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { MobileLayout } from "@/components/layout/MobileLayout";
 import { PatientCard, type Appointment } from "@/components/queue/PatientCard";
 import { QueueStats } from "@/components/queue/QueueStats";
 import { useToast } from "@/hooks/use-toast";
@@ -221,40 +222,37 @@ export default function LiveQueue() {
   const remaining = total - checkedIn;
 
   return (
-    <div className="flex gap-6 h-full" dir="rtl">
-      {/* Stats Panel - 30% */}
-      <div className="w-[30%] min-w-[280px]">
-        <div className="sticky top-0 bg-card rounded-2xl p-6 border shadow-sm">
+    <MobileLayout title="قائمة الانتظار">
+      <div className="space-y-4" dir="rtl">
+        {/* Compact Stats for Mobile */}
+        <div className="bg-card rounded-xl p-4 border shadow-sm">
           <QueueStats total={total} checkedIn={checkedIn} remaining={remaining} />
         </div>
-      </div>
 
-      {/* Active Queue List - 70% */}
-      <div className="flex-1">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-foreground">
-            قائمة الانتظار النشطة
+        {/* Active Queue List */}
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-semibold text-foreground">
+            الانتظار النشط
           </h2>
           <Button
-            variant="outline"
-            size="sm"
+            variant="ghost"
+            size="icon"
             onClick={fetchAppointments}
             disabled={loading}
-            className="gap-2"
+            className="h-9 w-9"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            <span>تحديث</span>
           </Button>
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center h-64">
-            <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+          <div className="flex items-center justify-center h-48">
+            <RefreshCw className="h-6 w-6 animate-spin text-primary" />
           </div>
         ) : appointments.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-            <Users className="h-12 w-12 mb-4" />
-            <p className="text-lg">لا توجد مواعيد اليوم</p>
+          <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">
+            <Users className="h-10 w-10 mb-3" />
+            <p className="text-sm">لا توجد مواعيد اليوم</p>
           </div>
         ) : (
           <div className="flex flex-col gap-3">
@@ -272,6 +270,6 @@ export default function LiveQueue() {
           </div>
         )}
       </div>
-    </div>
+    </MobileLayout>
   );
 }
