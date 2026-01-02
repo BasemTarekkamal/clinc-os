@@ -1,12 +1,7 @@
-import { AppLayout } from "@/components/layout/AppLayout";
 import LiveQueue from "./LiveQueue";
 
 const Index = () => {
-  return (
-    <AppLayout>
-      <LiveQueue />
-    </AppLayout>
-  );
+  return <LiveQueue />;
 };
 
 export default Index;

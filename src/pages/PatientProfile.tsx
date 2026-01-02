@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowRight, Stethoscope, RefreshCw, CheckCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { AppLayout } from "@/components/layout/AppLayout";
+import { MobileLayout } from "@/components/layout/MobileLayout";
 import { PatientInfo, type Patient } from "@/components/emr/PatientInfo";
 import { VisitTimeline, type Visit } from "@/components/emr/VisitTimeline";
 import { ConsultationOverlay, type ConsultationData } from "@/components/emr/ConsultationOverlay";
@@ -114,7 +114,7 @@ export default function PatientProfile() {
       });
       setIsInActiveConsultation(false);
       setActiveAppointmentId(null);
-      navigate("/queue");
+      navigate("/");
     }
   };
 
@@ -198,91 +198,47 @@ export default function PatientProfile() {
 
   if (loading) {
     return (
-      <AppLayout>
-        <div className="flex items-center justify-center h-full">
+      <MobileLayout title="ملف المريض" showBackButton>
+        <div className="flex items-center justify-center h-[60vh]">
           <RefreshCw className="h-8 w-8 animate-spin text-primary" />
         </div>
-      </AppLayout>
+      </MobileLayout>
     );
   }
 
   if (!patient) {
     return (
-      <AppLayout>
-        <div className="flex flex-col items-center justify-center h-full text-center" dir="rtl">
+      <MobileLayout title="ملف المريض" showBackButton>
+        <div className="flex flex-col items-center justify-center h-[60vh] text-center" dir="rtl">
           <p className="text-lg text-muted-foreground mb-4">لم يتم العثور على المريض</p>
-          <Button onClick={() => navigate("/queue")}>
+          <Button onClick={() => navigate("/")}>
             العودة للقائمة
           </Button>
         </div>
-      </AppLayout>
+      </MobileLayout>
     );
   }
 
   return (
-    <AppLayout>
-      <div className="space-y-6" dir="rtl">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate("/queue")}
-              className="rounded-full"
-            >
-              <ArrowRight className="h-5 w-5" />
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">ملف المريض</h1>
-              <p className="text-muted-foreground">عرض السجل الطبي الكامل</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            {isInActiveConsultation && (
-              <Button 
-                onClick={handleEndConsultation}
-                variant="outline"
-                className="gap-2 border-green-500 text-green-600 hover:bg-green-50"
-                size="lg"
-              >
-                <CheckCircle className="h-5 w-5" />
-                <span>إنهاء الاستشارة</span>
-              </Button>
-            )}
-            <Button 
-              onClick={() => setShowConsultation(true)}
-              className="gap-2"
-              size="lg"
-            >
-              <Stethoscope className="h-5 w-5" />
-              <span>بدء استشارة</span>
-            </Button>
-          </div>
-        </div>
-
+    <MobileLayout title="ملف المريض" showBackButton>
+      <div className="space-y-4 pb-24" dir="rtl">
         {/* Active Consultation Banner */}
         {isInActiveConsultation && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
-              <span className="text-green-700 font-medium">هذا المريض في استشارة نشطة حالياً</span>
+          <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-xl p-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse" />
+              <span className="text-sm text-green-700 dark:text-green-300 font-medium">استشارة نشطة</span>
             </div>
           </div>
         )}
 
-        {/* Split View */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Patient Info (30%) */}
-          <div className="lg:col-span-1">
-            <PatientInfo patient={patient} />
-          </div>
+        {/* Patient Info Card */}
+        <PatientInfo patient={patient} />
 
-          {/* Right Column - Timeline (70%) */}
-          <div className="lg:col-span-2 space-y-4">
-            <h2 className="text-lg font-semibold text-foreground">سجل الزيارات</h2>
-            <VisitTimeline visits={visits} />
-          </div>
+        {/* Visit Timeline */}
+        <div className="space-y-3">
+          <h2 className="text-base font-semibold text-foreground">سجل الزيارات</h2>
+          <VisitTimeline visits={visits} />
         </div>
 
         {/* Consultation Overlay */}
@@ -292,7 +248,30 @@ export default function PatientProfile() {
           onClose={() => setShowConsultation(false)}
           onSave={handleSaveConsultation}
         />
+
+        {/* Fixed Bottom Action Bar */}
+        <div className="fixed bottom-20 left-4 right-4 z-40 flex gap-3" dir="rtl">
+          {isInActiveConsultation && (
+            <Button 
+              onClick={handleEndConsultation}
+              variant="outline"
+              className="flex-1 gap-2 border-green-500 text-green-600 hover:bg-green-50 bg-card shadow-lg"
+              size="lg"
+            >
+              <CheckCircle className="h-5 w-5" />
+              <span>إنهاء الاستشارة</span>
+            </Button>
+          )}
+          <Button 
+            onClick={() => setShowConsultation(true)}
+            className="flex-1 gap-2 shadow-lg"
+            size="lg"
+          >
+            <Stethoscope className="h-5 w-5" />
+            <span>{isInActiveConsultation ? "متابعة" : "بدء استشارة"}</span>
+          </Button>
+        </div>
       </div>
-    </AppLayout>
+    </MobileLayout>
   );
 }
