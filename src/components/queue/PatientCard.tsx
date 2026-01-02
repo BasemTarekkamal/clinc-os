@@ -8,7 +8,7 @@ import {
   Zap,
   User,
   Stethoscope,
-  FileText
+  ChevronLeft
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -65,7 +65,7 @@ const statusConfig: Record<AppointmentStatus, {
   },
   late: { 
     label: "Late / Risk", 
-    labelAr: "متأخر / خطر", 
+    labelAr: "متأخر", 
     bgClass: "bg-status-late-bg",
     textClass: "text-status-late"
   },
@@ -90,7 +90,8 @@ export function PatientCard({
   const navigate = useNavigate();
   const status = statusConfig[appointment.status];
 
-  const handleNoShow = () => {
+  const handleNoShow = (e: React.MouseEvent) => {
+    e.stopPropagation();
     setIsExiting(true);
     setTimeout(() => {
       onNoShow(appointment.id);
@@ -119,7 +120,6 @@ export function PatientCard({
 
   const handleStartConsultation = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // Only call the parent handler to update status, it will handle navigation
     if (onStartConsultation) {
       onStartConsultation(appointment.id);
     }
@@ -129,13 +129,11 @@ export function PatientCard({
     e.stopPropagation();
     if (isProcessing) return;
     
-    // If patient_id exists, navigate directly
     if (appointment.patient_id) {
       navigate(`/patient/${appointment.patient_id}?consultation=true`);
       return;
     }
 
-    // Otherwise, ensure patient exists first
     if (onEnsurePatient) {
       setIsProcessing(true);
       const patientId = await onEnsurePatient(appointment.id);
@@ -155,145 +153,118 @@ export function PatientCard({
   return (
     <div 
       className={cn(
-        "relative flex items-center gap-4 p-4 rounded-xl bg-card border transition-all duration-300",
-        "hover:shadow-md slide-in cursor-pointer",
+        "relative rounded-xl bg-card border transition-all duration-300",
+        "active:scale-[0.98] cursor-pointer",
         status.borderClass,
-        isExiting && "fade-out",
+        isExiting && "opacity-0 -translate-x-full",
         isProcessing && "opacity-70 pointer-events-none"
       )}
       onClick={handleOpenProfile}
     >
       {/* Fast Track Badge */}
       {appointment.is_fast_track && (
-        <div className="absolute -top-2 -end-2 flex items-center gap-1 px-2 py-1 rounded-full bg-warning text-warning-foreground text-xs font-medium">
+        <div className="absolute -top-2 -end-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-warning text-warning-foreground text-xs font-medium z-10">
           <Zap className="h-3 w-3" />
           <span>سريع</span>
         </div>
       )}
 
-      {/* Patient Photo */}
-      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-secondary">
-        {appointment.patient_photo ? (
-          <img 
-            src={appointment.patient_photo} 
-            alt={appointment.patient_name}
-            className="h-full w-full rounded-full object-cover"
-          />
-        ) : (
-          <User className="h-7 w-7 text-muted-foreground" />
-        )}
-      </div>
+      {/* Main Content */}
+      <div className="p-4">
+        <div className="flex items-center gap-3">
+          {/* Patient Photo */}
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-secondary">
+            {appointment.patient_photo ? (
+              <img 
+                src={appointment.patient_photo} 
+                alt={appointment.patient_name}
+                className="h-full w-full rounded-full object-cover"
+              />
+            ) : (
+              <User className="h-6 w-6 text-muted-foreground" />
+            )}
+          </div>
 
-      {/* Patient Info */}
-      <div className="flex-1 min-w-0">
-        <h3 className="text-base font-semibold text-foreground truncate font-arabic">
-          {appointment.patient_name}
-        </h3>
-        <div className="flex items-center gap-2 mt-1">
-          <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">{formattedTime}</span>
+          {/* Patient Info */}
+          <div className="flex-1 min-w-0">
+            <h3 className="text-base font-semibold text-foreground truncate font-arabic">
+              {appointment.patient_name}
+            </h3>
+            <div className="flex items-center gap-2 mt-0.5">
+              <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">{formattedTime}</span>
+              <span className={cn(
+                "px-2 py-0.5 rounded-full text-xs font-medium",
+                status.bgClass,
+                status.textClass
+              )}>
+                {status.labelAr}
+              </span>
+            </div>
+          </div>
+
+          {/* Arrow */}
+          <ChevronLeft className="h-5 w-5 text-muted-foreground" />
         </div>
-      </div>
 
-      {/* Status Badge */}
-      <div className={cn(
-        "px-3 py-1.5 rounded-full text-sm font-medium",
-        status.bgClass,
-        status.textClass
-      )}>
-        {status.labelAr}
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-        {/* View Profile */}
-        <Button
-          variant="outline"
-          size="lg"
-          onClick={handleOpenProfile}
-          className={cn(
-            "h-12 w-12 p-0 rounded-xl transition-all duration-200",
-            "hover:bg-accent hover:text-accent-foreground"
+        {/* Action Buttons Row */}
+        <div className="flex items-center gap-2 mt-3 pt-3 border-t" onClick={(e) => e.stopPropagation()}>
+          {/* Primary Action */}
+          {appointment.status === "arrived" && (
+            <Button
+              size="sm"
+              onClick={handleStartConsultation}
+              className="flex-1 gap-1.5"
+            >
+              <Stethoscope className="h-4 w-4" />
+              <span>بدء الكشف</span>
+            </Button>
           )}
-          title="عرض الملف"
-        >
-          <FileText className="h-5 w-5" />
-        </Button>
 
-        {/* Start Consultation - Only for arrived patients */}
-        {appointment.status === "arrived" && (
+          {appointment.status === "in-consultation" && (
+            <Button
+              size="sm"
+              onClick={handleContinueConsultation}
+              className="flex-1 gap-1.5"
+            >
+              <Stethoscope className="h-4 w-4" />
+              <span>متابعة</span>
+            </Button>
+          )}
+
+          {appointment.status === "booked" && (
+            <Button
+              size="sm"
+              variant="default"
+              onClick={(e) => { e.stopPropagation(); onCheckIn(appointment.id); }}
+              className="flex-1 gap-1.5"
+            >
+              <CheckCircle className="h-4 w-4" />
+              <span>تسجيل الوصول</span>
+            </Button>
+          )}
+
+          {/* Secondary Actions */}
           <Button
             variant="outline"
-            size="lg"
-            onClick={handleStartConsultation}
-            className={cn(
-              "h-12 w-12 p-0 rounded-xl transition-all duration-200",
-              "hover:bg-primary hover:text-primary-foreground hover:border-primary"
-            )}
-            title="بدء الاستشارة"
+            size="icon"
+            onClick={(e) => { e.stopPropagation(); onSendReminder(appointment.id); }}
+            className="h-9 w-9 shrink-0"
+            title="إرسال تذكير"
           >
-            <Stethoscope className="h-5 w-5" />
+            <MessageCircle className="h-4 w-4" />
           </Button>
-        )}
 
-        {/* Continue Consultation - For in-consultation patients */}
-        {appointment.status === "in-consultation" && (
           <Button
-            variant="default"
-            size="lg"
-            onClick={handleContinueConsultation}
-            className={cn(
-              "h-12 w-12 p-0 rounded-xl transition-all duration-200"
-            )}
-            title="متابعة الاستشارة"
+            variant="outline"
+            size="icon"
+            onClick={handleNoShow}
+            className="h-9 w-9 shrink-0 hover:bg-destructive hover:text-destructive-foreground hover:border-destructive"
+            title="لم يحضر"
           >
-            <Stethoscope className="h-5 w-5" />
+            <XCircle className="h-4 w-4" />
           </Button>
-        )}
-
-        {/* Check In */}
-        <Button
-          variant="outline"
-          size="lg"
-          onClick={(e) => { e.stopPropagation(); onCheckIn(appointment.id); }}
-          disabled={appointment.status === "arrived" || appointment.status === "in-consultation"}
-          className={cn(
-            "h-12 w-12 p-0 rounded-xl transition-all duration-200",
-            "hover:bg-success hover:text-success-foreground hover:border-success",
-            "disabled:opacity-50"
-          )}
-          title="تسجيل الحضور"
-        >
-          <CheckCircle className="h-5 w-5" />
-        </Button>
-
-        {/* Send Reminder */}
-        <Button
-          variant="outline"
-          size="lg"
-          onClick={(e) => { e.stopPropagation(); onSendReminder(appointment.id); }}
-          className={cn(
-            "h-12 w-12 p-0 rounded-xl transition-all duration-200",
-            "hover:bg-primary hover:text-primary-foreground hover:border-primary"
-          )}
-          title="إرسال تذكير"
-        >
-          <MessageCircle className="h-5 w-5" />
-        </Button>
-
-        {/* No Show */}
-        <Button
-          variant="outline"
-          size="lg"
-          onClick={(e) => { e.stopPropagation(); handleNoShow(); }}
-          className={cn(
-            "h-12 w-12 p-0 rounded-xl transition-all duration-200",
-            "hover:bg-destructive hover:text-destructive-foreground hover:border-destructive"
-          )}
-          title="لم يحضر"
-        >
-          <XCircle className="h-5 w-5" />
-        </Button>
+        </div>
       </div>
     </div>
   );

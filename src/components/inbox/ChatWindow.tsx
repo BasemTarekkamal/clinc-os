@@ -54,7 +54,6 @@ export function ChatWindow({ conversation }: ChatWindowProps) {
       fetchMessages();
       setIsAiActive(conversation.is_ai_handled);
 
-      // Subscribe to realtime messages
       const channel = supabase
         .channel(`messages-${conversation.id}`)
         .on(
@@ -87,7 +86,6 @@ export function ChatWindow({ conversation }: ChatWindowProps) {
     const messageContent = newMessage;
     setNewMessage("");
 
-    // Insert patient message
     const { error: insertError } = await supabase.from('messages').insert({
       conversation_id: conversation.id,
       content: messageContent,
@@ -104,7 +102,6 @@ export function ChatWindow({ conversation }: ChatWindowProps) {
       return;
     }
 
-    // Update conversation
     await supabase
       .from('conversations')
       .update({
@@ -114,7 +111,6 @@ export function ChatWindow({ conversation }: ChatWindowProps) {
       })
       .eq('id', conversation.id);
 
-    // If AI is active, get AI response
     if (isAiActive) {
       setSendingAi(true);
       try {
@@ -153,7 +149,6 @@ export function ChatWindow({ conversation }: ChatWindowProps) {
     const messageContent = newMessage;
     setNewMessage("");
 
-    // Insert doctor message
     const { error: insertError } = await supabase.from('messages').insert({
       conversation_id: conversation.id,
       content: messageContent,
@@ -170,7 +165,6 @@ export function ChatWindow({ conversation }: ChatWindowProps) {
       return;
     }
 
-    // Update conversation
     await supabase
       .from('conversations')
       .update({
@@ -209,13 +203,13 @@ export function ChatWindow({ conversation }: ChatWindowProps) {
   if (!conversation) {
     return (
       <div className="flex-1 flex items-center justify-center bg-secondary/30">
-        <div className="text-center">
-          <div className="h-16 w-16 rounded-2xl bg-accent flex items-center justify-center mx-auto mb-4">
-            <Bot className="h-8 w-8 text-primary" />
+        <div className="text-center p-6">
+          <div className="h-14 w-14 rounded-2xl bg-accent flex items-center justify-center mx-auto mb-4">
+            <Bot className="h-7 w-7 text-primary" />
           </div>
           <h3 className="font-semibold text-foreground mb-2">صندوق الوارد الذكي</h3>
-          <p className="text-muted-foreground text-sm max-w-xs">
-            اختر محادثة للرد، أو دع الذكاء الاصطناعي يتولى الرد التلقائي
+          <p className="text-muted-foreground text-sm">
+            اختر محادثة للرد
           </p>
         </div>
       </div>
@@ -224,52 +218,43 @@ export function ChatWindow({ conversation }: ChatWindowProps) {
 
   return (
     <div className="flex-1 flex flex-col h-full">
-      {/* Header */}
-      <div className="p-4 border-b bg-card flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center">
-            <span className="font-medium text-secondary-foreground">
-              {conversation.patient_name.charAt(0)}
-            </span>
-          </div>
-          <div>
-            <h4 className="font-semibold text-foreground">{conversation.patient_name}</h4>
-            <div className="flex items-center gap-2">
-              {isAiActive ? (
-                <Badge className="bg-[hsl(var(--success))] text-[hsl(var(--success-foreground))] text-xs">
-                  <Bot className="h-3 w-3 ml-1" />
-                  AI يرد تلقائياً
-                </Badge>
-              ) : (
-                <Badge variant="secondary" className="text-xs">
-                  <User className="h-3 w-3 ml-1" />
-                  أنت ترد
-                </Badge>
-              )}
-            </div>
-          </div>
+      {/* AI Status Bar - Mobile optimized */}
+      <div className="px-4 py-2 border-b bg-card flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {isAiActive ? (
+            <Badge className="bg-[hsl(var(--success))] text-[hsl(var(--success-foreground))] text-xs">
+              <Bot className="h-3 w-3 ml-1" />
+              AI يرد
+            </Badge>
+          ) : (
+            <Badge variant="secondary" className="text-xs">
+              <User className="h-3 w-3 ml-1" />
+              أنت ترد
+            </Badge>
+          )}
         </div>
         
         {isAiActive && (
           <Button 
             variant="outline" 
-            className="gap-2 border-[hsl(var(--warning))] text-[hsl(var(--warning))] hover:bg-[hsl(var(--warning))] hover:text-[hsl(var(--warning-foreground))]"
+            size="sm"
+            className="gap-1.5 h-8 text-xs border-[hsl(var(--warning))] text-[hsl(var(--warning))]"
             onClick={handleTakeOver}
           >
-            <HandMetal className="h-4 w-4" />
-            <span>تولي المحادثة</span>
+            <HandMetal className="h-3.5 w-3.5" />
+            <span>تولي</span>
           </Button>
         )}
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-secondary/20">
+      <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-secondary/20">
         {loading ? (
-          <div className="flex items-center justify-center h-full">
+          <div className="flex items-center justify-center h-32">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : messages.length === 0 ? (
-          <div className="text-center text-muted-foreground py-8">
+          <div className="text-center text-muted-foreground py-8 text-sm">
             لا توجد رسائل بعد
           </div>
         ) : (
@@ -282,14 +267,14 @@ export function ChatWindow({ conversation }: ChatWindowProps) {
               )}
             >
               {message.sender === "patient" && (
-                <div className="h-8 w-8 rounded-full bg-secondary shrink-0 flex items-center justify-center">
-                  <User className="h-4 w-4 text-muted-foreground" />
+                <div className="h-7 w-7 rounded-full bg-secondary shrink-0 flex items-center justify-center">
+                  <User className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
               )}
               
               <div
                 className={cn(
-                  "max-w-[70%] rounded-2xl px-4 py-3 shadow-sm",
+                  "max-w-[80%] rounded-2xl px-3 py-2 shadow-sm",
                   message.sender === "patient" 
                     ? "bg-card text-foreground rounded-tr-sm" 
                     : message.sender === "ai"
@@ -298,37 +283,37 @@ export function ChatWindow({ conversation }: ChatWindowProps) {
                 )}
               >
                 {message.sender !== "patient" && (
-                  <div className="flex items-center gap-1 mb-1 opacity-90">
+                  <div className="flex items-center gap-1 mb-0.5 opacity-90">
                     {message.sender === "ai" ? (
                       <>
                         <Bot className="h-3 w-3" />
-                        <span className="text-xs">AI Assistant</span>
+                        <span className="text-[10px]">AI</span>
                       </>
                     ) : (
                       <>
                         <User className="h-3 w-3" />
-                        <span className="text-xs">أنت</span>
+                        <span className="text-[10px]">أنت</span>
                       </>
                     )}
                   </div>
                 )}
                 <p className="text-sm whitespace-pre-line">{message.content}</p>
-                <span className="text-xs opacity-75 mt-1 block">
+                <span className="text-[10px] opacity-75 mt-1 block">
                   {formatTime(message.created_at)}
                 </span>
               </div>
 
               {message.sender !== "patient" && (
                 <div className={cn(
-                  "h-8 w-8 rounded-full shrink-0 flex items-center justify-center",
+                  "h-7 w-7 rounded-full shrink-0 flex items-center justify-center",
                   message.sender === "ai" 
                     ? "bg-[hsl(var(--success))]" 
                     : "bg-[hsl(var(--primary))]"
                 )}>
                   {message.sender === "ai" ? (
-                    <Bot className="h-4 w-4 text-[hsl(var(--success-foreground))]" />
+                    <Bot className="h-3.5 w-3.5 text-[hsl(var(--success-foreground))]" />
                   ) : (
-                    <User className="h-4 w-4 text-[hsl(var(--primary-foreground))]" />
+                    <User className="h-3.5 w-3.5 text-[hsl(var(--primary-foreground))]" />
                   )}
                 </div>
               )}
@@ -337,41 +322,42 @@ export function ChatWindow({ conversation }: ChatWindowProps) {
         )}
         {sendingAi && (
           <div className="flex gap-2 justify-end">
-            <div className="bg-[hsl(var(--success))] text-[hsl(var(--success-foreground))] rounded-2xl rounded-tl-sm px-4 py-3">
+            <div className="bg-[hsl(var(--success))] text-[hsl(var(--success-foreground))] rounded-2xl rounded-tl-sm px-3 py-2">
               <div className="flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 <span className="text-sm">جاري الكتابة...</span>
               </div>
             </div>
-            <div className="h-8 w-8 rounded-full bg-[hsl(var(--success))] flex items-center justify-center">
-              <Bot className="h-4 w-4 text-[hsl(var(--success-foreground))]" />
+            <div className="h-7 w-7 rounded-full bg-[hsl(var(--success))] flex items-center justify-center">
+              <Bot className="h-3.5 w-3.5 text-[hsl(var(--success-foreground))]" />
             </div>
           </div>
         )}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <div className="p-4 border-t bg-card">
+      {/* Input - Mobile optimized */}
+      <div className="p-3 border-t bg-card safe-area-bottom">
         <div className="flex gap-2">
           <Input
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            placeholder={isAiActive ? "اكتب رسالة كمريض للاختبار..." : "اكتب ردك..."}
-            className="flex-1"
+            placeholder={isAiActive ? "اكتب رسالة للاختبار..." : "اكتب ردك..."}
+            className="flex-1 h-11"
             onKeyDown={(e) => e.key === "Enter" && (isAiActive ? handleSend() : handleDoctorReply())}
           />
           <Button 
             onClick={isAiActive ? handleSend : handleDoctorReply} 
-            className="gap-2"
+            size="icon"
+            className="h-11 w-11 shrink-0"
             disabled={sendingAi}
           >
-            {sendingAi ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            {sendingAi ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
           </Button>
         </div>
         {isAiActive && (
-          <p className="text-xs text-muted-foreground mt-2 text-center">
-            💡 الرسائل هنا تحاكي رسائل المريض - AI سيرد تلقائياً
+          <p className="text-[10px] text-muted-foreground mt-2 text-center">
+            💡 الرسائل تحاكي رسائل المريض - AI سيرد تلقائياً
           </p>
         )}
       </div>
