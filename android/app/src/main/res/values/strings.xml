@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">clinc-os</string>
+    <string name="title_activity_main">clinc-os</string>
+    <string name="package_name">app.lovable.eec32f625c27464b83884c2850671b26</string>
+    <string name="custom_url_scheme">app.lovable.eec32f625c27464b83884c2850671b26</string>
+</resources>
