@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -18,206 +19,197 @@ serve(async (req) => {
     }
 
     try {
-        const { sessionId, message, userId } = await req.json();
-
-        if (!OPENAI_API_KEY) {
-            throw new Error('OPENAI_API_KEY is not configured');
-        }
-
+        const { message, sessionId, userId } = await req.json();
         const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-        // Get or Create Session (Thread)
-        let threadId = null;
-        let currentSessionId = sessionId;
+        // 1. Fetch Context (Profile + Children)
+        const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', userId).single();
+        const { data: children } = await supabase.from('children').select('name, date_of_birth, gender').eq('parent_id', userId);
 
-        if (currentSessionId) {
-            const { data: session } = await supabase
-                .from('chat_sessions')
-                .select('initial_prompt')
-                .eq('id', currentSessionId)
-                .single();
-
-            if (session?.initial_prompt) {
-                threadId = session.initial_prompt;
-            }
+        let contextString = `Current User: ${profile?.full_name || 'Unknown'}\n`;
+        if (children && children.length > 0) {
+            contextString += "Children:\n";
+            children.forEach((child: any) => {
+                contextString += `- ${child.name} (${child.gender}, Born: ${child.date_of_birth})\n`;
+            });
+        } else {
+            contextString += "No children registered yet.\n";
         }
 
-        // Create new thread if not exist
-        if (!threadId) {
-            const threadResponse = await fetch('https://api.openai.com/v1/threads', {
+        let threadId;
+        let currentSessionId = sessionId;
+
+        if (!currentSessionId) {
+            // Create New Session
+            const run = await fetch('https://api.openai.com/v1/threads', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${OPENAI_API_KEY}`,
+                    'Content-Type': 'application/json',
+                    'OpenAI-Beta': 'assistants=v2',
+                }
+            }).then(r => r.json());
+
+            threadId = run.id;
+
+            // Generate Title
+            let title = "محادثة جديدة";
+            try {
+                const titleRes = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        model: 'gpt-4o-mini',
+                        messages: [
+                            { role: 'system', content: 'Create a 3-4 word Arabic title for this message.' },
+                            { role: 'user', content: message }
+                        ],
+                        max_tokens: 15,
+                    }),
+                }).then(r => r.json());
+                if (titleRes.choices?.[0]?.message?.content) {
+                    title = titleRes.choices[0].message.content.replace(/"/g, '');
+                }
+            } catch (e) {
+                console.error("Title gen error:", e);
+            }
+
+            const { data: sessionData, error } = await supabase
+                .from('chat_sessions')
+                .insert({ user_id: userId, initial_prompt: threadId, name: title })
+                .select()
+                .single();
+
+            if (error) throw error;
+            currentSessionId = sessionData.id;
+
+            // Seed Context
+            await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${OPENAI_API_KEY}`,
                     'Content-Type': 'application/json',
                     'OpenAI-Beta': 'assistants=v2',
                 },
+                body: JSON.stringify({
+                    role: "user",
+                    content: `CONTEXT (System Note):\n${contextString}\n\nUser Question: ${message}`
+                })
             });
-            const threadData = await threadResponse.json();
-            threadId = threadData.id;
 
-            // If no currentSessionId, create it
-            if (!currentSessionId) {
-                const { data: newSession } = await supabase
-                    .from('chat_sessions')
-                    .insert({
-                        user_id: userId,
-                        initial_prompt: threadId, // Storing threadId here
-                        name: message.substring(0, 50) + (message.length > 50 ? '...' : ''), // Initial name
-                    })
-                    .select()
-                    .single();
-                currentSessionId = newSession.id;
-            } else {
-                // Update existing session with threadId
-                await supabase
-                    .from('chat_sessions')
-                    .update({ initial_prompt: threadId })
-                    .eq('id', currentSessionId);
+        } else {
+            const { data } = await supabase.from('chat_sessions').select('initial_prompt').eq('id', currentSessionId).single();
+            threadId = data.initial_prompt;
+
+            await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${OPENAI_API_KEY}`,
+                    'Content-Type': 'application/json',
+                    'OpenAI-Beta': 'assistants=v2',
+                },
+                body: JSON.stringify({ role: "user", content: message })
+            });
+        }
+
+        // Run with Tools
+        const tools = [{
+            type: "function",
+            function: {
+                name: "set_reminder",
+                description: "Set a reminder for the user. Use this when the user asks to be reminded about something (e.g., medication, appointment).",
+                parameters: {
+                    type: "object",
+                    properties: {
+                        title: { type: "string", description: "Short title for the reminder" },
+                        due_date_iso: { type: "string", description: "ISO 8601 formatted date-time. Calculate this based on relative time (e.g. 'in 4 hours')." },
+                        description: { type: "string", description: "Optional details" }
+                    },
+                    required: ["title"]
+                }
+            }
+        }];
+
+        let run = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${OPENAI_API_KEY}`,
+                'Content-Type': 'application/json',
+                'OpenAI-Beta': 'assistants=v2',
+            },
+            body: JSON.stringify({ assistant_id: ASSISTANT_ID, tools })
+        }).then(r => r.json());
+
+        // Polling
+        while (['queued', 'in_progress', 'requires_action'].includes(run.status)) {
+            await new Promise(r => setTimeout(r, 1000));
+            run = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs/${run.id}`, {
+                headers: { 'Authorization': `Bearer ${OPENAI_API_KEY}`, 'OpenAI-Beta': 'assistants=v2' }
+            }).then(r => r.json());
+
+            if (run.status === 'requires_action') {
+                const toolOutputs = [];
+                for (const call of run.required_action.submit_tool_outputs.tool_calls) {
+                    if (call.function.name === 'set_reminder') {
+                        const args = JSON.parse(call.function.arguments);
+                        console.log("Setting reminder:", args);
+
+                        // Fallback due date if needed
+                        const dueDate = args.due_date_iso ? new Date(args.due_date_iso) : new Date(Date.now() + 3600000);
+
+                        const { error } = await supabase.from('reminders' as any).insert({
+                            user_id: userId,
+                            title: args.title,
+                            description: args.description || '',
+                            due_date: dueDate.toISOString(),
+                            is_completed: false
+                        });
+
+                        toolOutputs.push({
+                            tool_call_id: call.id,
+                            output: error ? `Error saving reminder: ${error.message}` : "Reminder saved successfully!"
+                        });
+                    }
+                }
+
+                // Submit outputs
+                await fetch(`https://api.openai.com/v1/threads/${threadId}/runs/${run.id}/submit_tool_outputs`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${OPENAI_API_KEY}`, 'Content-Type': 'application/json', 'OpenAI-Beta': 'assistants=v2' },
+                    body: JSON.stringify({ tool_outputs: toolOutputs })
+                });
             }
         }
 
-        // Add Message to Thread
-        await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${OPENAI_API_KEY}`,
-                'Content-Type': 'application/json',
-                'OpenAI-Beta': 'assistants=v2',
-            },
-            body: JSON.stringify({
-                role: 'user',
-                content: message,
-            }),
-        });
-
-        // Run Assistant
-        const runResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${OPENAI_API_KEY}`,
-                'Content-Type': 'application/json',
-                'OpenAI-Beta': 'assistants=v2',
-            },
-            body: JSON.stringify({
-                assistant_id: ASSISTANT_ID,
-            }),
-        });
-        let runData = await runResponse.json();
-
-        // Poll for completion
-        while (runData.status === 'queued' || runData.status === 'in_progress' || runData.status === 'busy') {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            const pollResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs/${runData.id}`, {
-                headers: {
-                    'Authorization': `Bearer ${OPENAI_API_KEY}`,
-                    'OpenAI-Beta': 'assistants=v2',
-                },
-            });
-            runData = await pollResponse.json();
-        }
-
-        if (runData.status !== 'completed') {
-            console.error('Run failed:', runData);
-            throw new Error(`AI assistant run failed with status: ${runData.status}`);
+        if (run.status !== 'completed') {
+            console.error('Run failed:', run);
+            throw new Error(`Run status: ${run.status}`);
         }
 
         // Get Messages
-        const messagesResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
-            headers: {
-                'Authorization': `Bearer ${OPENAI_API_KEY}`,
-                'OpenAI-Beta': 'assistants=v2',
-            },
-        });
-        if (!messagesResponse.ok) {
-            const errorBody = await messagesResponse.text();
-            throw new Error(`Failed to retrieve messages: ${messagesResponse.status} ${messagesResponse.statusText} - ${errorBody}`);
-        }
-        const messagesData = await messagesResponse.json();
-        const assistantMessage = messagesData.data.find((m: any) => m.role === 'assistant');
+        const messages = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
+            headers: { 'Authorization': `Bearer ${OPENAI_API_KEY}`, 'OpenAI-Beta': 'assistants=v2' }
+        }).then(r => r.json());
 
-        if (!assistantMessage || !assistantMessage.content || !assistantMessage.content[0] || !assistantMessage.content[0].text || !assistantMessage.content[0].text.value) {
-            throw new Error('Could not find assistant message or its content.');
-        }
-        const aiResponse = assistantMessage.content[0].text.value;
+        const responseText = messages.data[0].content[0].text.value;
 
-        // Log messages to database
-        if (!currentSessionId) {
-            throw new Error('Session ID is missing after creation/retrieval.');
-        }
-        const { error: logError } = await supabase.from('chat_messages').insert([
-            { session_id: currentSessionId, content: message, role: 'user' },
-            { session_id: currentSessionId, content: aiResponse, role: 'assistant' }
+        // Log
+        await supabase.from('chat_messages').insert([
+            { session_id: currentSessionId, role: 'user', content: message },
+            { session_id: currentSessionId, role: 'assistant', content: responseText }
         ]);
-        if (logError) {
-            console.error('Error logging messages:', logError);
-            throw new Error(`Failed to log messages: ${logError.message}`);
-        }
 
-        // Generate Title if it's a new session or still has default title
-        const { data: sessionData, error: sessionNameError } = await supabase
-            .from('chat_sessions')
-            .select('name')
-            .eq('id', currentSessionId)
-            .single();
-
-        if (sessionNameError && sessionNameError.code !== 'PGRST116') {
-            console.error('Error fetching session name:', sessionNameError);
-            throw new Error(`Failed to fetch session name: ${sessionNameError.message}`);
-        }
-
-        if (!sessionData?.name || sessionData.name.includes('...')) {
-            const titleResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${OPENAI_API_KEY}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    model: 'gpt-4o-mini',
-                    messages: [
-                        { role: 'system', content: 'أنت مساعد يقوم بإنشاء عنوان قصير ومختصر جداً (بحد أقصى 4 كلمات) لمحادثة طبية بناءً على رسالة المستخدم. العنوان يجب أن يكون باللغة العربية.' },
-                        { role: 'user', content: `أنشئ عنواناً لهذه الرسالة: ${message}` }
-                    ],
-                    max_tokens: 10,
-                }),
-            });
-
-            if (!titleResponse.ok) {
-                const errorBody = await titleResponse.text();
-                console.error('Error generating title:', errorBody);
-                throw new Error(`Failed to generate title: ${titleResponse.status} ${titleResponse.statusText} - ${errorBody}`);
-            }
-
-            const titleData = await titleResponse.json();
-            if (!titleData.choices || titleData.choices.length === 0 || !titleData.choices[0].message || !titleData.choices[0].message.content) {
-                console.warn('OpenAI title generation response missing expected data:', titleData);
-                // Continue without updating title if generation failed
-            } else {
-                const generatedTitle = titleData.choices[0].message.content.trim().replace(/^"|"$/g, '');
-
-                const { error: updateTitleError } = await supabase
-                    .from('chat_sessions')
-                    .update({ name: generatedTitle })
-                    .eq('id', currentSessionId);
-
-                if (updateTitleError) {
-                    console.error('Error updating session title:', updateTitleError);
-                    // Log error but don't block response
-                }
-            }
-        }
-
-        return new Response(JSON.stringify({
-            response: aiResponse,
-            sessionId: currentSessionId
-        }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        return new Response(JSON.stringify({ response: responseText, sessionId: currentSessionId }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
+
     } catch (error) {
-        console.error('Error in assistant-chat function:', error);
+        console.error('Error:', error);
         return new Response(JSON.stringify({ error: (error as Error).message }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
     }
 });
