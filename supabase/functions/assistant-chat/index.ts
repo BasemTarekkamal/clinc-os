@@ -1,4 +1,4 @@
-
+// Deployment Timestamp: 2026-01-07T13:50:00Z
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
