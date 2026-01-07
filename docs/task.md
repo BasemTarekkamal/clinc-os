@@ -1,0 +1,22 @@
+# Task: Enhancing Dashboard, Chat, and Tracking Features
+
+- [x] Research and Planning <!-- id: 22 -->
+    - [x] Check schema for Reminders/Alerts <!-- id: 23 -->
+    - [x] Check schema for Physical Evaluations/Growth Records <!-- id: 24 -->
+    - [x] Design AI tool for setting reminders <!-- id: 25 -->
+    - [x] Plan data fetching for AI context (Parent + Kids) <!-- id: 26 -->
+- [x] Implementation - Database <!-- id: 40 -->
+    - [x] Create `reminders` and `child_milestones` tables <!-- id: 41 -->
+- [x] Dashboard Improvements <!-- id: 27 -->
+    - [x] Make "Quick Stats" cards clickable (Navigation) <!-- id: 28 -->
+- [x] AI Assistant Enhancements <!-- id: 29 -->
+    - [x] Update `assistant-chat` to fetch and inject User & Children context <!-- id: 30 -->
+    - [x] Implement `set_reminder` tool for AI <!-- id: 31 -->
+- [x] Physical Evaluation Logging <!-- id: 32 -->
+    - [x] Implement UI for logging physical evaluations <!-- id: 34 -->
+    - [x] Add Evolution Log to History Tab <!-- id: 42 -->
+- [x] Verification <!-- id: 35 -->
+    - [x] Test Dashboard navigation <!-- id: 36 -->
+    - [x] Test setting reminders via Chat <!-- id: 37 -->
+    - [x] Verify AI knows parent/child names <!-- id: 38 -->
+    - [x] Test logging physical evaluations <!-- id: 39 -->
