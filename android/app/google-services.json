@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "628472747060",
+    "project_id": "tamny-push-notification",
+    "storage_bucket": "tamny-push-notification.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:628472747060:android:94fe510ba8d2e3d52a6661",
+        "android_client_info": {
+          "package_name": "app.lovable.eec32f625c27464b83884c2850671b26"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBUDme0w9cDfYtkGUr5_2DRZztmVg5AMPI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
