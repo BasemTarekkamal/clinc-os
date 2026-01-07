@@ -131,6 +131,23 @@ serve(async (req) => {
                     required: ["title"]
                 }
             }
+        },
+        {
+            type: "function",
+            function: {
+                name: "log_milestone",
+                description: "Log a developmental milestone for a child. Use this when the user says their child did something new (e.g. 'Basem started walking', 'Ahmed smiled').",
+                parameters: {
+                    type: "object",
+                    properties: {
+                        child_name: { type: "string", description: "The name of the child (e.g. Basem, Ahmed)" },
+                        milestone: { type: "string", description: "Description of the milestone (e.g. 'started walking', 'first smile')" },
+                        category: { type: "string", enum: ["physical", "social"], description: "Category of the milestone" },
+                        age_range: { type: "string", description: "Approximate age range or 'custom' if unknown" }
+                    },
+                    required: ["child_name", "milestone", "category"]
+                }
+            }
         }];
 
         let run = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs`, {
@@ -151,27 +168,95 @@ serve(async (req) => {
             }).then(r => r.json());
 
             if (run.status === 'requires_action') {
+                let debugError = null;
+
                 const toolOutputs = [];
                 for (const call of run.required_action.submit_tool_outputs.tool_calls) {
                     if (call.function.name === 'set_reminder') {
                         const args = JSON.parse(call.function.arguments);
-                        console.log("Setting reminder:", args);
+                        let dueDate = new Date(Date.now() + 3600000); // Default 1 hour
+                        if (args.due_date_iso) {
+                            const parsed = new Date(args.due_date_iso);
+                            if (!isNaN(parsed.getTime())) {
+                                dueDate = parsed;
+                            }
+                        }
 
-                        // Fallback due date if needed
-                        const dueDate = args.due_date_iso ? new Date(args.due_date_iso) : new Date(Date.now() + 3600000);
+                        // Call dedicated Edge Function instead of direct DB access
+                        try {
+                            const response = await fetch(`${SUPABASE_URL}/functions/v1/create-reminder`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`
+                                },
+                                body: JSON.stringify({
+                                    userId: userId,
+                                    title: args.title || 'Reminder',
+                                    description: args.description || '',
+                                    dueDate: dueDate.toISOString()
+                                })
+                            });
 
-                        const { error } = await supabase.from('reminders' as any).insert({
-                            user_id: userId,
-                            title: args.title,
-                            description: args.description || '',
-                            due_date: dueDate.toISOString(),
-                            is_completed: false
-                        });
+                            const result = await response.json();
 
-                        toolOutputs.push({
-                            tool_call_id: call.id,
-                            output: error ? `Error saving reminder: ${error.message}` : "Reminder saved successfully!"
-                        });
+                            if (result.success) {
+                                toolOutputs.push({
+                                    tool_call_id: call.id,
+                                    output: "Reminder saved successfully!"
+                                });
+                            } else {
+                                debugError = `EDGE_FN_ERR: ${result.error}`;
+                                toolOutputs.push({
+                                    tool_call_id: call.id,
+                                    output: `Error: ${result.error}`
+                                });
+                            }
+                        } catch (fetchError: any) {
+                            debugError = `FETCH_ERR: ${fetchError.message}`;
+                            toolOutputs.push({
+                                tool_call_id: call.id,
+                                output: `Error: ${fetchError.message}`
+                            });
+                        }
+                    } else if (call.function.name === 'log_milestone') {
+                        const args = JSON.parse(call.function.arguments);
+
+                        try {
+                            const response = await fetch(`${SUPABASE_URL}/functions/v1/log-milestone`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`
+                                },
+                                body: JSON.stringify({
+                                    userId: userId,
+                                    childName: args.child_name,
+                                    milestone: args.milestone,
+                                    category: args.category,
+                                    ageRange: args.age_range
+                                })
+                            });
+
+                            const result = await response.json();
+
+                            if (result.success) {
+                                toolOutputs.push({
+                                    tool_call_id: call.id,
+                                    output: `Logged milestone for ${result.childName || 'child'}`
+                                });
+                            } else {
+                                toolOutputs.push({
+                                    tool_call_id: call.id,
+                                    output: `Error: ${result.error}`
+                                });
+                            }
+                        } catch (fetchError: any) {
+                            toolOutputs.push({
+                                tool_call_id: call.id,
+                                output: `Error: ${fetchError.message}`
+                            });
+                        }
                     }
                 }
 
