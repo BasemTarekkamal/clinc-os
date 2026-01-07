@@ -221,40 +221,41 @@ serve(async (req) => {
                         }
                     } else if (call.function.name === 'log_milestone') {
                         const args = JSON.parse(call.function.arguments);
+                        console.log("LOG_MILESTONE_INLINE: Args:", args);
 
-                        try {
-                            const response = await fetch(`${SUPABASE_URL}/functions/v1/log-milestone`, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`
-                                },
-                                body: JSON.stringify({
-                                    userId: userId,
-                                    childName: args.child_name,
-                                    milestone: args.milestone,
-                                    category: args.category,
-                                    ageRange: args.age_range
-                                })
+                        // 1. Find Child ID
+                        const { data: childrenData } = await supabase
+                            .from('children')
+                            .select('id, name')
+                            .eq('parent_id', userId);
+
+                        let childId = null;
+                        if (childrenData) {
+                            const match = childrenData.find((c: any) => args.child_name && c.name.toLowerCase().includes(args.child_name.toLowerCase()));
+                            if (match) {
+                                childId = match.id;
+                            } else if (childrenData.length === 1) {
+                                childId = childrenData[0].id; // Default to single child
+                            }
+                        }
+
+                        if (childId) {
+                            const { error } = await supabase.from('child_milestones' as any).insert({
+                                child_id: childId,
+                                milestone_id: 'custom_ai_log',
+                                description: args.milestone,
+                                category: args.category || 'general',
+                                achieved_at: new Date().toISOString()
                             });
 
-                            const result = await response.json();
-
-                            if (result.success) {
-                                toolOutputs.push({
-                                    tool_call_id: call.id,
-                                    output: `Logged milestone for ${result.childName || 'child'}`
-                                });
-                            } else {
-                                toolOutputs.push({
-                                    tool_call_id: call.id,
-                                    output: `Error: ${result.error}`
-                                });
-                            }
-                        } catch (fetchError: any) {
                             toolOutputs.push({
                                 tool_call_id: call.id,
-                                output: `Error: ${fetchError.message}`
+                                output: error ? `Error: ${error.message}` : `Logged milestone for child ID ${childId}`
+                            });
+                        } else {
+                            toolOutputs.push({
+                                tool_call_id: call.id,
+                                output: "Error: Child not found"
                             });
                         }
                     }
