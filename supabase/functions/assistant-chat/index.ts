@@ -102,7 +102,7 @@ serve(async (req) => {
 
         } else {
             const { data } = await supabase.from('chat_sessions').select('initial_prompt').eq('id', currentSessionId).single();
-            threadId = data.initial_prompt;
+            threadId = data?.initial_prompt;
 
             await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
                 method: 'POST',

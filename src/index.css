@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -12,56 +12,56 @@
   --safe-area-right: env(safe-area-inset-right, 0px);
 }
 
-/* ClinicOS Design System - Clean, Clinical, Professional */
+/* ClinicOS Design System - Modern, Bold, Dark-First */
 
 @layer base {
   :root {
-    /* Core Colors */
-    --background: 210 40% 98%;
-    --foreground: 215 25% 15%;
+    /* Core Colors - Light Mode */
+    --background: 220 20% 97%;
+    --foreground: 220 25% 10%;
 
-    /* Card - Clean white */
+    /* Card - Subtle glass effect */
     --card: 0 0% 100%;
-    --card-foreground: 215 25% 15%;
+    --card-foreground: 220 25% 10%;
 
     /* Popover */
     --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 15%;
+    --popover-foreground: 220 25% 10%;
 
-    /* Primary - Medical Blue #0EA5E9 */
-    --primary: 199 89% 48%;
+    /* Primary - Vibrant Teal */
+    --primary: 173 80% 40%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary - Slate Grey #F1F5F9 */
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 215 25% 27%;
+    /* Secondary */
+    --secondary: 220 15% 92%;
+    --secondary-foreground: 220 25% 25%;
 
     /* Muted */
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 220 15% 94%;
+    --muted-foreground: 220 10% 45%;
 
     /* Accent */
-    --accent: 199 89% 95%;
-    --accent-foreground: 199 89% 35%;
+    --accent: 173 80% 95%;
+    --accent-foreground: 173 80% 30%;
 
-    /* Status Colors */
-    --status-booked: 215 16% 70%;
-    --status-booked-bg: 215 16% 95%;
-    --status-arrived: 142 76% 36%;
-    --status-arrived-bg: 142 76% 92%;
+    /* Status Colors - Vibrant & Clear */
+    --status-booked: 220 15% 60%;
+    --status-booked-bg: 220 15% 94%;
+    --status-arrived: 150 84% 40%;
+    --status-arrived-bg: 150 84% 94%;
     --status-consultation: 199 89% 48%;
-    --status-consultation-bg: 199 89% 95%;
-    --status-late: 0 84% 60%;
-    --status-late-bg: 0 84% 95%;
-    --status-noshow: 215 16% 65%;
-    --status-noshow-bg: 215 16% 90%;
+    --status-consultation-bg: 199 89% 94%;
+    --status-late: 0 72% 55%;
+    --status-late-bg: 0 72% 95%;
+    --status-noshow: 220 15% 55%;
+    --status-noshow-bg: 220 15% 92%;
 
     /* Destructive */
-    --destructive: 0 84% 60%;
+    --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 100%;
 
     /* Success */
-    --success: 142 76% 36%;
+    --success: 150 84% 40%;
     --success-foreground: 0 0% 100%;
 
     /* Warning */
@@ -69,66 +69,110 @@
     --warning-foreground: 0 0% 100%;
 
     /* Borders & Inputs */
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 199 89% 48%;
+    --border: 220 15% 88%;
+    --input: 220 15% 88%;
+    --ring: 173 80% 40%;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
 
     /* Sidebar */
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 215 25% 35%;
-    --sidebar-primary: 199 89% 48%;
+    --sidebar-foreground: 220 25% 30%;
+    --sidebar-primary: 173 80% 40%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 199 89% 95%;
-    --sidebar-accent-foreground: 199 89% 35%;
-    --sidebar-border: 214 32% 91%;
-    --sidebar-ring: 199 89% 48%;
+    --sidebar-accent: 173 80% 95%;
+    --sidebar-accent-foreground: 173 80% 30%;
+    --sidebar-border: 220 15% 90%;
+    --sidebar-ring: 173 80% 40%;
 
+    /* Glass Effects */
+    --glass-bg: 0 0% 100% / 0.8;
+    --glass-border: 0 0% 100% / 0.2;
+    
     /* Shadows */
-    --shadow-sm: 0 1px 2px 0 hsl(215 25% 15% / 0.05);
-    --shadow-md: 0 4px 6px -1px hsl(215 25% 15% / 0.1), 0 2px 4px -2px hsl(215 25% 15% / 0.1);
-    --shadow-lg: 0 10px 15px -3px hsl(215 25% 15% / 0.1), 0 4px 6px -4px hsl(215 25% 15% / 0.1);
-    --shadow-glow: 0 0 20px hsl(199 89% 48% / 0.3);
+    --shadow-sm: 0 1px 3px 0 hsl(220 25% 10% / 0.06);
+    --shadow-md: 0 4px 12px -2px hsl(220 25% 10% / 0.08);
+    --shadow-lg: 0 12px 32px -4px hsl(220 25% 10% / 0.12);
+    --shadow-glow: 0 0 24px hsl(173 80% 40% / 0.25);
   }
 
   .dark {
-    --background: 215 25% 9%;
-    --foreground: 210 40% 98%;
+    /* Core Colors - Dark Mode (Primary) */
+    --background: 225 25% 8%;
+    --foreground: 210 20% 95%;
 
-    --card: 215 25% 12%;
-    --card-foreground: 210 40% 98%;
+    /* Card - Glass morphism */
+    --card: 225 20% 12%;
+    --card-foreground: 210 20% 95%;
 
-    --popover: 215 25% 12%;
-    --popover-foreground: 210 40% 98%;
+    /* Popover */
+    --popover: 225 20% 12%;
+    --popover-foreground: 210 20% 95%;
 
-    --primary: 199 89% 48%;
-    --primary-foreground: 0 0% 100%;
+    /* Primary - Vibrant Cyan */
+    --primary: 173 80% 50%;
+    --primary-foreground: 225 25% 8%;
 
-    --secondary: 215 25% 18%;
-    --secondary-foreground: 210 40% 98%;
+    /* Secondary */
+    --secondary: 225 20% 16%;
+    --secondary-foreground: 210 20% 90%;
 
-    --muted: 215 25% 18%;
-    --muted-foreground: 215 20% 65%;
+    /* Muted */
+    --muted: 225 20% 18%;
+    --muted-foreground: 220 15% 55%;
 
-    --accent: 199 89% 20%;
-    --accent-foreground: 199 89% 80%;
+    /* Accent */
+    --accent: 173 80% 15%;
+    --accent-foreground: 173 80% 70%;
 
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
+    /* Status Colors - Dark Mode */
+    --status-booked: 220 15% 50%;
+    --status-booked-bg: 220 15% 20%;
+    --status-arrived: 150 70% 50%;
+    --status-arrived-bg: 150 70% 15%;
+    --status-consultation: 199 89% 55%;
+    --status-consultation-bg: 199 89% 15%;
+    --status-late: 0 72% 60%;
+    --status-late-bg: 0 72% 15%;
+    --status-noshow: 220 15% 45%;
+    --status-noshow-bg: 220 15% 18%;
 
-    --border: 215 25% 22%;
-    --input: 215 25% 22%;
-    --ring: 199 89% 48%;
+    /* Destructive */
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
 
-    --sidebar-background: 215 25% 10%;
-    --sidebar-foreground: 210 40% 95%;
-    --sidebar-primary: 199 89% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 199 89% 15%;
-    --sidebar-accent-foreground: 199 89% 80%;
-    --sidebar-border: 215 25% 22%;
-    --sidebar-ring: 199 89% 48%;
+    /* Success */
+    --success: 150 70% 50%;
+    --success-foreground: 225 25% 8%;
+
+    /* Warning */
+    --warning: 38 92% 55%;
+    --warning-foreground: 225 25% 8%;
+
+    /* Borders & Inputs */
+    --border: 225 20% 18%;
+    --input: 225 20% 18%;
+    --ring: 173 80% 50%;
+
+    /* Sidebar */
+    --sidebar-background: 225 25% 10%;
+    --sidebar-foreground: 210 20% 90%;
+    --sidebar-primary: 173 80% 50%;
+    --sidebar-primary-foreground: 225 25% 8%;
+    --sidebar-accent: 173 80% 15%;
+    --sidebar-accent-foreground: 173 80% 70%;
+    --sidebar-border: 225 20% 18%;
+    --sidebar-ring: 173 80% 50%;
+
+    /* Glass Effects */
+    --glass-bg: 225 20% 12% / 0.85;
+    --glass-border: 225 20% 25% / 0.5;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 3px 0 hsl(0 0% 0% / 0.3);
+    --shadow-md: 0 4px 12px -2px hsl(0 0% 0% / 0.4);
+    --shadow-lg: 0 12px 32px -4px hsl(0 0% 0% / 0.5);
+    --shadow-glow: 0 0 32px hsl(173 80% 50% / 0.3);
   }
 }
 
@@ -139,15 +183,52 @@
 
   html {
     font-family: 'Inter', 'IBM Plex Sans Arabic', system-ui, sans-serif;
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
     @apply bg-background text-foreground antialiased;
+    overscroll-behavior: none;
   }
 
   /* RTL Support */
   [dir="rtl"] {
     font-family: 'IBM Plex Sans Arabic', 'Inter', system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  /* Glass Card */
+  .glass-card {
+    @apply rounded-2xl border border-border/50 bg-card/80 backdrop-blur-xl;
+    box-shadow: var(--shadow-md);
+  }
+
+  /* Gradient Text */
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary to-cyan-400 bg-clip-text text-transparent;
+  }
+
+  /* Modern Button */
+  .btn-primary {
+    @apply bg-gradient-to-r from-primary to-cyan-500 text-primary-foreground font-medium;
+    @apply rounded-xl px-4 py-2.5;
+    @apply transition-all duration-200 ease-out;
+    @apply hover:shadow-lg hover:shadow-primary/25;
+    @apply active:scale-[0.98];
+  }
+
+  /* Status Pill */
+  .status-pill {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold;
+  }
+
+  /* Floating Nav */
+  .floating-nav {
+    @apply fixed bottom-4 inset-x-4 z-50;
+    @apply rounded-2xl border border-border/50;
+    @apply bg-card/90 backdrop-blur-xl;
+    box-shadow: var(--shadow-lg);
   }
 }
 
@@ -158,7 +239,7 @@
   }
   
   .safe-area-bottom {
-    padding-bottom: var(--safe-area-bottom);
+    padding-bottom: max(var(--safe-area-bottom), 1rem);
   }
   
   .safe-area-left {
@@ -176,16 +257,36 @@
 
   @keyframes pulse-border {
     0%, 100% {
-      box-shadow: 0 0 0 0 hsl(199 89% 48% / 0.7);
+      box-shadow: 0 0 0 0 hsl(var(--primary) / 0.5);
     }
     50% {
-      box-shadow: 0 0 0 8px hsl(199 89% 48% / 0);
+      box-shadow: 0 0 0 6px hsl(var(--primary) / 0);
     }
   }
 
-  /* Fade out animation */
+  /* Glow effect */
+  .glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  /* Fade animations */
+  .fade-in {
+    animation: fade-in 0.3s ease-out;
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   .fade-out {
-    animation: fade-out 0.5s ease-out forwards;
+    animation: fade-out 0.4s ease-out forwards;
   }
 
   @keyframes fade-out {
@@ -199,15 +300,15 @@
     }
   }
 
-  /* Slide in animation */
-  .slide-in {
-    animation: slide-in 0.3s ease-out;
+  /* Slide animations */
+  .slide-up {
+    animation: slide-up 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  @keyframes slide-in {
+  @keyframes slide-up {
     from {
       opacity: 0;
-      transform: translateY(10px);
+      transform: translateY(16px);
     }
     to {
       opacity: 1;
@@ -215,14 +316,45 @@
     }
   }
 
-  /* Status badge glow */
-  .status-glow {
-    box-shadow: var(--shadow-glow);
+  /* Scale animation */
+  .scale-in {
+    animation: scale-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
   }
 
   /* Touch-friendly tap targets */
   .touch-target {
     min-height: 44px;
     min-width: 44px;
+  }
+
+  /* Backdrop blur */
+  .backdrop-blur-glass {
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+  }
+
+  /* Text balance for Arabic */
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Hide scrollbar */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
   }
 }

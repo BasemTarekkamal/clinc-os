@@ -7,65 +7,70 @@ interface QueueStatsProps {
   remaining: number;
 }
 
-interface StatCardProps {
-  icon: React.ComponentType<{ className?: string }>;
+interface StatItemProps {
+  icon: React.ElementType;
   label: string;
   value: number;
-  color: string;
-  bgColor: string;
+  variant: "primary" | "success" | "warning";
 }
 
-function StatCard({ icon: Icon, label, value, color, bgColor }: StatCardProps) {
+function StatItem({ icon: Icon, label, value, variant }: StatItemProps) {
+  const variants = {
+    primary: {
+      bg: "bg-primary/10",
+      text: "text-primary",
+      icon: "text-primary"
+    },
+    success: {
+      bg: "bg-emerald-500/10",
+      text: "text-emerald-600 dark:text-emerald-400",
+      icon: "text-emerald-500"
+    },
+    warning: {
+      bg: "bg-amber-500/10",
+      text: "text-amber-600 dark:text-amber-400",
+      icon: "text-amber-500"
+    }
+  };
+
+  const v = variants[variant];
+
   return (
-    <div className={cn(
-      "flex flex-col items-center justify-center p-6 rounded-2xl",
-      "transition-all duration-200 hover:scale-105",
-      bgColor
-    )}>
-      <div className={cn(
-        "flex h-12 w-12 items-center justify-center rounded-xl mb-3",
-        color
-      )}>
-        <Icon className="h-6 w-6" />
+    <div className="flex flex-col items-center gap-2 flex-1">
+      <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl", v.bg)}>
+        <Icon className={cn("h-5 w-5", v.icon)} />
       </div>
-      <span className="text-3xl font-bold text-foreground mb-1">{value}</span>
-      <span className="text-sm text-muted-foreground font-medium">{label}</span>
+      <div className="text-center">
+        <p className={cn("text-2xl font-bold", v.text)}>{value}</p>
+        <p className="text-xs text-muted-foreground font-medium">{label}</p>
+      </div>
     </div>
   );
 }
 
 export function QueueStats({ total, checkedIn, remaining }: QueueStatsProps) {
   return (
-    <div className="flex flex-col gap-4 h-full">
-      <h2 className="text-lg font-semibold text-foreground mb-2">
-        إحصائيات اليوم
-      </h2>
-      
-      <div className="flex flex-col gap-4 flex-1">
-        <StatCard 
-          icon={Users}
-          label="إجمالي المرضى"
-          value={total}
-          color="bg-primary text-primary-foreground"
-          bgColor="bg-accent"
-        />
-        
-        <StatCard 
-          icon={UserCheck}
-          label="تم الحضور"
-          value={checkedIn}
-          color="bg-success text-success-foreground"
-          bgColor="bg-status-arrived-bg"
-        />
-        
-        <StatCard 
-          icon={Clock}
-          label="المتبقين"
-          value={remaining}
-          color="bg-warning text-warning-foreground"
-          bgColor="bg-secondary"
-        />
-      </div>
+    <div className="flex items-stretch justify-around gap-4">
+      <StatItem 
+        icon={Users} 
+        label="إجمالي اليوم" 
+        value={total} 
+        variant="primary" 
+      />
+      <div className="w-px bg-border/50" />
+      <StatItem 
+        icon={UserCheck} 
+        label="حضروا" 
+        value={checkedIn} 
+        variant="success" 
+      />
+      <div className="w-px bg-border/50" />
+      <StatItem 
+        icon={Clock} 
+        label="متبقي" 
+        value={remaining} 
+        variant="warning" 
+      />
     </div>
   );
 }
