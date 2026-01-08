@@ -1,11 +1,3 @@
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -47,67 +39,64 @@ const paymentLabels: Record<LedgerEntry["paymentMethod"], string> = {
 };
 
 const paymentColors: Record<LedgerEntry["paymentMethod"], string> = {
-  cash: "bg-[hsl(var(--success))] text-[hsl(var(--success-foreground))]",
-  instapay: "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]",
-  card: "bg-[hsl(var(--warning))] text-[hsl(var(--warning-foreground))]",
+  cash: "bg-success/20 text-success border-success/30",
+  instapay: "bg-primary/20 text-primary border-primary/30",
+  card: "bg-warning/20 text-warning border-warning/30",
 };
+
+function LedgerCard({ entry }: { entry: LedgerEntry }) {
+  return (
+    <div className="bg-card/50 backdrop-blur-sm rounded-xl p-4 border border-border/50">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs font-mono text-muted-foreground">{entry.time}</span>
+            <Badge 
+              variant="outline"
+              className={cn("text-[10px] px-1.5 py-0", paymentColors[entry.paymentMethod])}
+            >
+              {paymentLabels[entry.paymentMethod]}
+            </Badge>
+          </div>
+          <p className="font-medium text-foreground truncate">{entry.patientName}</p>
+          <p className="text-xs text-muted-foreground">{serviceLabels[entry.serviceType]}</p>
+        </div>
+        <div className="text-left shrink-0">
+          <p className="font-bold text-foreground">{entry.price} ج.م</p>
+          <Badge 
+            variant="outline"
+            className={cn(
+              "text-[10px] px-1.5 py-0 mt-1",
+              entry.status === "paid" 
+                ? "bg-success/20 text-success border-success/30" 
+                : "bg-warning/20 text-warning border-warning/30"
+            )}
+          >
+            {entry.status === "paid" ? "مدفوع" : "معلق"}
+          </Badge>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function DailyLedger() {
   return (
-    <div className="bg-card rounded-2xl border overflow-hidden">
-      <div className="p-4 border-b">
-        <h3 className="font-semibold text-foreground">سجل اليوم</h3>
-        <p className="text-sm text-muted-foreground">المواعيد المكتملة اليوم</p>
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-semibold text-foreground">سجل اليوم</h3>
+          <p className="text-xs text-muted-foreground">المواعيد المكتملة</p>
+        </div>
+        <Badge variant="secondary" className="text-xs">
+          {mockData.length} معاملات
+        </Badge>
       </div>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="text-right">الوقت</TableHead>
-            <TableHead className="text-right">المريض</TableHead>
-            <TableHead className="text-right">نوع الخدمة</TableHead>
-            <TableHead className="text-right">السعر</TableHead>
-            <TableHead className="text-right">طريقة الدفع</TableHead>
-            <TableHead className="text-right">الحالة</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {mockData.map((entry) => (
-            <TableRow key={entry.id}>
-              <TableCell className="font-mono text-muted-foreground">
-                {entry.time}
-              </TableCell>
-              <TableCell className="font-medium text-foreground">
-                {entry.patientName}
-              </TableCell>
-              <TableCell>
-                <Badge variant="secondary">
-                  {serviceLabels[entry.serviceType]}
-                </Badge>
-              </TableCell>
-              <TableCell className="font-semibold text-foreground">
-                {entry.price} ج.م
-              </TableCell>
-              <TableCell>
-                <Badge className={cn("font-medium", paymentColors[entry.paymentMethod])}>
-                  {paymentLabels[entry.paymentMethod]}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <Badge 
-                  variant={entry.status === "paid" ? "default" : "outline"}
-                  className={cn(
-                    entry.status === "paid" 
-                      ? "bg-[hsl(var(--success))] text-[hsl(var(--success-foreground))]" 
-                      : "border-[hsl(var(--warning))] text-[hsl(var(--warning))]"
-                  )}
-                >
-                  {entry.status === "paid" ? "مدفوع" : "معلق"}
-                </Badge>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+      <div className="space-y-2">
+        {mockData.map((entry) => (
+          <LedgerCard key={entry.id} entry={entry} />
+        ))}
+      </div>
     </div>
   );
 }
