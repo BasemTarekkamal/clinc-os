@@ -1,4 +1,4 @@
-import { Wallet, Banknote, Smartphone, CreditCard, TrendingUp } from "lucide-react";
+import { Banknote, Smartphone, CreditCard, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SummaryCardProps {
@@ -11,31 +11,37 @@ interface SummaryCardProps {
 
 function SummaryCard({ title, value, subtitle, icon: Icon, variant = "primary" }: SummaryCardProps) {
   const variantStyles = {
-    primary: "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]",
-    success: "bg-[hsl(var(--success))] text-[hsl(var(--success-foreground))]",
-    warning: "bg-[hsl(var(--warning))] text-[hsl(var(--warning-foreground))]",
-    info: "bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))]",
+    primary: "bg-gradient-to-br from-primary/20 to-primary/5 border-primary/20",
+    success: "bg-gradient-to-br from-success/20 to-success/5 border-success/20",
+    warning: "bg-gradient-to-br from-warning/20 to-warning/5 border-warning/20",
+    info: "bg-gradient-to-br from-accent/20 to-accent/5 border-accent/20",
   };
 
-  const iconBgStyles = {
-    primary: "bg-[hsl(var(--primary-foreground)/0.2)]",
-    success: "bg-[hsl(var(--success-foreground)/0.2)]",
-    warning: "bg-[hsl(var(--warning-foreground)/0.2)]",
-    info: "bg-[hsl(var(--accent-foreground)/0.2)]",
+  const iconStyles = {
+    primary: "text-primary",
+    success: "text-success",
+    warning: "text-warning",
+    info: "text-accent",
   };
 
   return (
-    <div className={cn("rounded-2xl p-6 transition-all duration-200", variantStyles[variant])}>
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-sm opacity-90 mb-1">{title}</p>
-          <p className="text-3xl font-bold">{value}</p>
-          {subtitle && (
-            <p className="text-sm opacity-75 mt-2">{subtitle}</p>
-          )}
+    <div className={cn(
+      "rounded-xl p-4 border backdrop-blur-sm",
+      variantStyles[variant]
+    )}>
+      <div className="flex items-center gap-3">
+        <div className={cn(
+          "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-background/50",
+          iconStyles[variant]
+        )}>
+          <Icon className="h-5 w-5" />
         </div>
-        <div className={cn("flex h-12 w-12 items-center justify-center rounded-xl", iconBgStyles[variant])}>
-          <Icon className="h-6 w-6" />
+        <div className="flex-1 min-w-0">
+          <p className="text-xs text-muted-foreground truncate">{title}</p>
+          <p className="text-lg font-bold text-foreground">{value}</p>
+          {subtitle && (
+            <p className="text-xs text-muted-foreground">{subtitle}</p>
+          )}
         </div>
       </div>
     </div>
@@ -44,30 +50,30 @@ function SummaryCard({ title, value, subtitle, icon: Icon, variant = "primary" }
 
 export function RevenueSummary() {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 gap-3">
       <SummaryCard
-        title="إجمالي الإيرادات اليوم"
+        title="إجمالي اليوم"
         value="3,000 ج.م"
         subtitle="8 معاملات"
         icon={TrendingUp}
         variant="primary"
       />
       <SummaryCard
-        title="النقدي في الصندوق"
+        title="النقدي"
         value="1,100 ج.م"
         subtitle="4 معاملات"
         icon={Banknote}
         variant="success"
       />
       <SummaryCard
-        title="InstaPay (معلق)"
+        title="InstaPay"
         value="900 ج.م"
-        subtitle="2 معاملات معلقة"
+        subtitle="2 معلق"
         icon={Smartphone}
         variant="warning"
       />
       <SummaryCard
-        title="بطاقات الدفع"
+        title="بطاقات"
         value="700 ج.م"
         subtitle="2 معاملات"
         icon={CreditCard}
