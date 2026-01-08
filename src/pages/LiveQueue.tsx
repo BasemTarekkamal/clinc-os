@@ -5,7 +5,7 @@ import { MobileLayout } from "@/components/layout/MobileLayout";
 import { PatientCard, type Appointment } from "@/components/queue/PatientCard";
 import { QueueStats } from "@/components/queue/QueueStats";
 import { useToast } from "@/hooks/use-toast";
-import { RefreshCw, Users } from "lucide-react";
+import { RefreshCw, Users, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function LiveQueue() {
@@ -39,7 +39,6 @@ export default function LiveQueue() {
   useEffect(() => {
     fetchAppointments();
 
-    // Subscribe to realtime changes
     const channel = supabase
       .channel("appointments-changes")
       .on(
@@ -60,20 +59,17 @@ export default function LiveQueue() {
     };
   }, [fetchAppointments]);
 
-  // Helper to ensure a patient record exists for an appointment
   const ensurePatientForAppointment = async (appointment: Appointment): Promise<string | null> => {
-    // If patient_id already exists, return it
     if (appointment.patient_id) {
       return appointment.patient_id;
     }
 
-    // Create a new patient record with minimal info
     const { data: newPatient, error: createError } = await supabase
       .from("patients")
       .insert({
         name: appointment.patient_name,
-        age: 0, // Unknown age, will display as "غير معروف"
-        gender: "male", // Default
+        age: 0,
+        gender: "male",
       })
       .select()
       .single();
@@ -88,7 +84,6 @@ export default function LiveQueue() {
       return null;
     }
 
-    // Update the appointment with the new patient_id
     const { error: updateError } = await supabase
       .from("appointments")
       .update({ patient_id: newPatient.id })
@@ -104,7 +99,6 @@ export default function LiveQueue() {
       return null;
     }
 
-    // Update local state
     setAppointments((prev) =>
       prev.map((a) =>
         a.id === appointment.id ? { ...a, patient_id: newPatient.id } : a
@@ -166,13 +160,12 @@ export default function LiveQueue() {
   };
 
   const handleStartConsultation = async (id: string) => {
-    // Check if there's already a patient in consultation
     const inConsultation = appointments.find((a) => a.status === "in-consultation");
     
     if (inConsultation) {
       toast({
         title: "تنبيه",
-        description: "يوجد مريض آخر في الاستشارة حالياً. يرجى إنهاء الاستشارة الحالية أولاً.",
+        description: "يوجد مريض آخر في الكشف حالياً. يرجى إنهاء الكشف الحالي أولاً.",
         variant: "destructive",
       });
       return;
@@ -181,7 +174,6 @@ export default function LiveQueue() {
     const appointment = appointments.find((a) => a.id === id);
     if (!appointment) return;
 
-    // Ensure patient exists before starting consultation
     const patientId = await ensurePatientForAppointment(appointment);
     if (!patientId) return;
     
@@ -193,28 +185,25 @@ export default function LiveQueue() {
     if (error) {
       toast({
         title: "خطأ",
-        description: "فشل في بدء الاستشارة",
+        description: "فشل في بدء الكشف",
         variant: "destructive",
       });
     } else {
       toast({
         title: "تم بنجاح",
-        description: "تم بدء الاستشارة",
+        description: "تم بدء الكشف",
       });
       
-      // Navigate to patient profile
       navigate(`/patient/${patientId}?consultation=true`);
     }
   };
 
-  // Handler for ensuring patient from PatientCard actions
   const handleEnsurePatient = async (appointmentId: string): Promise<string | null> => {
     const appointment = appointments.find((a) => a.id === appointmentId);
     if (!appointment) return null;
     return ensurePatientForAppointment(appointment);
   };
 
-  // Calculate stats
   const total = appointments.length;
   const checkedIn = appointments.filter(
     (a) => a.status === "arrived" || a.status === "in-consultation"
@@ -223,49 +212,70 @@ export default function LiveQueue() {
 
   return (
     <MobileLayout title="قائمة الانتظار">
-      <div className="space-y-4" dir="rtl">
-        {/* Compact Stats for Mobile */}
-        <div className="bg-card rounded-xl p-4 border shadow-sm">
+      <div className="space-y-5" dir="rtl">
+        {/* Stats Card */}
+        <div className="glass-card p-5">
           <QueueStats total={total} checkedIn={checkedIn} remaining={remaining} />
         </div>
 
-        {/* Active Queue List */}
+        {/* Section Header */}
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold text-foreground">
-            الانتظار النشط
+          <h2 className="text-base font-bold text-foreground">
+            المواعيد النشطة
           </h2>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={fetchAppointments}
-            disabled={loading}
-            className="h-9 w-9"
-          >
-            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={fetchAppointments}
+              disabled={loading}
+              className="h-9 w-9 rounded-xl"
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            </Button>
+            <Button
+              size="sm"
+              className="h-9 gap-1.5 rounded-xl"
+            >
+              <Plus className="h-4 w-4" />
+              <span>موعد جديد</span>
+            </Button>
+          </div>
         </div>
 
+        {/* Appointments List */}
         {loading ? (
           <div className="flex items-center justify-center h-48">
-            <RefreshCw className="h-6 w-6 animate-spin text-primary" />
+            <div className="flex flex-col items-center gap-3">
+              <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground">جاري التحميل...</p>
+            </div>
           </div>
         ) : appointments.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">
-            <Users className="h-10 w-10 mb-3" />
-            <p className="text-sm">لا توجد مواعيد اليوم</p>
+          <div className="flex flex-col items-center justify-center h-48 text-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted mb-4">
+              <Users className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h3 className="text-base font-semibold text-foreground mb-1">لا توجد مواعيد</h3>
+            <p className="text-sm text-muted-foreground">لم يتم حجز أي مواعيد لهذا اليوم</p>
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-            {appointments.map((appointment) => (
-              <PatientCard
+            {appointments.map((appointment, index) => (
+              <div 
                 key={appointment.id}
-                appointment={appointment}
-                onCheckIn={handleCheckIn}
-                onSendReminder={handleSendReminder}
-                onNoShow={handleNoShow}
-                onStartConsultation={handleStartConsultation}
-                onEnsurePatient={handleEnsurePatient}
-              />
+                className="slide-up"
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
+                <PatientCard
+                  appointment={appointment}
+                  onCheckIn={handleCheckIn}
+                  onSendReminder={handleSendReminder}
+                  onNoShow={handleNoShow}
+                  onStartConsultation={handleStartConsultation}
+                  onEnsurePatient={handleEnsurePatient}
+                />
+              </div>
             ))}
           </div>
         )}
